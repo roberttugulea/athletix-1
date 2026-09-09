@@ -13,6 +13,7 @@ export type FieldConfig = {
     | "email"
     | "tel"
     | "date"
+    | "time"
     | "number"
     | "select"
     | "checkbox"
