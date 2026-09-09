@@ -22,6 +22,29 @@ export const generateFeesSchema = z.object({
   period: z.string().regex(/^\d{4}-\d{2}$/, "Mese non valido"),
 });
 
+export const subscriptionPlanSchema = z.object({
+  name: z.string().min(1, "Obbligatorio").max(120),
+  duration_months: z
+    .number()
+    .int("Numero intero")
+    .min(1, "Da 1 a 36")
+    .max(36, "Da 1 a 36"),
+  price: z.number().nonnegative("Non può essere negativo"),
+  discipline_id: z.union([z.uuid(), z.literal("")]),
+  active: z.boolean(),
+});
+
+export const activateSubscriptionSchema = z.object({
+  plan_id: z.uuid("Seleziona un pacchetto"),
+  starts_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data non valida"),
+});
+
+export const SUBSCRIPTION_STATUS_LABEL: Record<string, string> = {
+  active: "Attivo",
+  expired: "Scaduto",
+  cancelled: "Annullato",
+};
+
 export const money = (n: number) =>
   new Intl.NumberFormat("it-IT", {
     style: "currency",

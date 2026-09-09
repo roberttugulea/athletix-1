@@ -12,6 +12,7 @@ import {
 import { athleteFields } from "../_fields";
 import { CategoriesSection } from "./_categories-section";
 import { GuardiansSection } from "./_guardians-section";
+import { SubscriptionsSection } from "./_subscriptions-section";
 
 export const metadata = { title: "Scheda atleta | ATHLETIX" };
 
@@ -83,10 +84,14 @@ export default async function AtletaDetailPage(props: {
         athleteId={row.id}
         organizationId={org.organizationId}
       />
+      <SubscriptionsSection
+        athleteId={row.id}
+        organizationId={org.organizationId}
+      />
 
       <p className="mt-6 text-xs text-[var(--muted)]">
-        Abbonamenti, certificati e tesseramenti dell&apos;atleta arriveranno nei
-        prossimi incrementi.
+        Certificati e tesseramenti dell&apos;atleta arriveranno nei prossimi
+        incrementi.
       </p>
     </div>
   );

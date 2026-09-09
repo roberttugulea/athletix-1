@@ -16,6 +16,11 @@ const SECTIONS = [
     title: "Quote mensili",
     desc: "Quote generate: stato, scadenze, pagamenti",
   },
+  {
+    href: "/abbonamenti/piani-pacchetto",
+    title: "Piani pacchetto",
+    desc: "Abbonamenti a durata (3, 9 mesi…) con prezzo unico",
+  },
 ];
 
 export default async function AbbonamentiPage() {
@@ -26,7 +31,7 @@ export default async function AbbonamentiPage() {
       <PageHeader
         eyebrow="Amministrazione"
         title="Abbonamenti e quote"
-        subtitle="Quote mensili ricorrenti dell'organizzazione."
+        subtitle="Quote mensili ricorrenti e pacchetti a durata."
       />
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {SECTIONS.map((s) => (

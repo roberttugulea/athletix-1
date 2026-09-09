@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import type { FormState } from "@/lib/forms";
-import { feePlanSchema, generateFeesSchema } from "@/lib/validation/billing";
+import {
+  activateSubscriptionSchema,
+  feePlanSchema,
+  generateFeesSchema,
+  subscriptionPlanSchema,
+} from "@/lib/validation/billing";
 import {
   actionCtx,
   dbError,
@@ -142,4 +147,128 @@ export async function refreshFeeStatuses(): Promise<void> {
     p_organization_id: c.org.organizationId,
   });
   revalidatePath("/abbonamenti/quote");
+}
+
+// -------------------------------------------------------- Piani pacchetto
+const SUB_PLAN_SPEC: Record<string, FieldKind> = {
+  name: "string",
+  duration_months: "int",
+  discipline_id: "string",
+  active: "bool",
+};
+
+function readSubPlan(fd: FormData) {
+  const raw = readForm(fd, SUB_PLAN_SPEC);
+  const price = fd.get("price");
+  return {
+    ...raw,
+    discipline_id: raw.discipline_id ?? "",
+    price:
+      typeof price === "string" && price.trim()
+        ? Number(price.trim().replace(",", "."))
+        : 0,
+  };
+}
+
+function toDbSubPlan(d: {
+  name: string;
+  duration_months: number;
+  price: number;
+  discipline_id: string;
+  active: boolean;
+}) {
+  return {
+    name: d.name,
+    duration_months: d.duration_months,
+    price: d.price,
+    discipline_id: d.discipline_id || null,
+    active: d.active,
+  };
+}
+
+export async function createSubscriptionPlan(
+  _p: FormState,
+  fd: FormData,
+): Promise<FormState> {
+  const c = await actionCtx("finance.manage");
+  if (!c.ok) return c.state;
+  const parsed = subscriptionPlanSchema.safeParse(readSubPlan(fd));
+  if (!parsed.success) return zodErrors(parsed.error);
+
+  const { data, error } = await c.supabase
+    .from("subscription_plans")
+    .insert({
+      ...toDbSubPlan(parsed.data),
+      organization_id: c.org.organizationId,
+    })
+    .select("id")
+    .single();
+  if (error || !data) return { message: dbError(error ?? { message: "" }) };
+
+  revalidatePath("/abbonamenti/piani-pacchetto");
+  redirect(`/abbonamenti/piani-pacchetto/${data.id}`);
+}
+
+export async function updateSubscriptionPlan(
+  _p: FormState,
+  fd: FormData,
+): Promise<FormState> {
+  const c = await actionCtx("finance.manage");
+  if (!c.ok) return c.state;
+  const id = String(fd.get("id") ?? "");
+  if (!id) return { message: "Identificativo mancante." };
+  const parsed = subscriptionPlanSchema.safeParse(readSubPlan(fd));
+  if (!parsed.success) return zodErrors(parsed.error);
+
+  const { error } = await c.supabase
+    .from("subscription_plans")
+    .update(toDbSubPlan(parsed.data))
+    .eq("id", id)
+    .eq("organization_id", c.org.organizationId);
+  if (error) return { message: dbError(error) };
+
+  revalidatePath("/abbonamenti/piani-pacchetto");
+  revalidatePath(`/abbonamenti/piani-pacchetto/${id}`);
+  return { ok: true, message: "Modifiche salvate." };
+}
+
+// ------------------------------------------------ Abbonamenti dell'atleta
+export async function activateSubscription(
+  _p: FormState,
+  fd: FormData,
+): Promise<FormState> {
+  const c = await actionCtx("finance.manage");
+  if (!c.ok) return c.state;
+  const athleteId = String(fd.get("athlete_id") ?? "");
+  if (!athleteId) return { message: "Atleta non indicato." };
+
+  const parsed = activateSubscriptionSchema.safeParse({
+    plan_id: fd.get("plan_id"),
+    starts_on: fd.get("starts_on"),
+  });
+  if (!parsed.success) return zodErrors(parsed.error);
+
+  const { error } = await c.supabase.rpc("create_subscription", {
+    p_athlete: athleteId,
+    p_plan: parsed.data.plan_id,
+    p_starts_on: parsed.data.starts_on,
+  });
+  if (error) return { message: dbError(error) };
+
+  revalidatePath(`/atleti/${athleteId}`);
+  return { ok: true, message: "Pacchetto attivato." };
+}
+
+export async function cancelSubscription(
+  subscriptionId: string,
+  athleteId: string,
+): Promise<void> {
+  const c = await actionCtx("finance.manage");
+  if (!c.ok) return;
+  await c.supabase
+    .from("subscriptions")
+    .update({ status: "cancelled" })
+    .eq("id", subscriptionId)
+    .eq("organization_id", c.org.organizationId);
+  revalidatePath(`/atleti/${athleteId}`);
 }

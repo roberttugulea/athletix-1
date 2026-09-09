@@ -2363,6 +2363,118 @@ export type Database = {
           },
         ]
       }
+      subscription_plans: {
+        Row: {
+          active: boolean
+          created_at: string
+          discipline_id: string | null
+          duration_months: number
+          id: string
+          name: string
+          organization_id: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          discipline_id?: string | null
+          duration_months: number
+          id?: string
+          name: string
+          organization_id: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          discipline_id?: string | null
+          duration_months?: number
+          id?: string
+          name?: string
+          organization_id?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_plans_discipline_id_fkey"
+            columns: ["discipline_id"]
+            isOneToOne: false
+            referencedRelation: "disciplines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_plans_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          athlete_id: string
+          created_at: string
+          ends_on: string
+          id: string
+          organization_id: string
+          plan_id: string
+          price: number
+          starts_on: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          athlete_id: string
+          created_at?: string
+          ends_on: string
+          id?: string
+          organization_id: string
+          plan_id: string
+          price: number
+          starts_on: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          athlete_id?: string
+          created_at?: string
+          ends_on?: string
+          id?: string
+          organization_id?: string
+          plan_id?: string
+          price?: number
+          starts_on?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "athletes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_sessions: {
         Row: {
           created_at: string
@@ -2531,6 +2643,10 @@ export type Database = {
       calculate_prorated_fee: {
         Args: { p_amount: number; p_joined_on: string; p_period: string }
         Returns: number
+      }
+      create_subscription: {
+        Args: { p_athlete: string; p_plan: string; p_starts_on: string }
+        Returns: string
       }
       generate_monthly_fees: {
         Args: { p_fee_plan: string; p_period: string }

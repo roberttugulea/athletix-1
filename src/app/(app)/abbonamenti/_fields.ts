@@ -41,3 +41,24 @@ export function feePlanFields(seasons: Opt[], groups: Opt[]): FieldConfig[] {
     { name: "active_to", label: "Attivo fino al", type: "date" },
   ];
 }
+
+export function subscriptionPlanFields(disciplines: Opt[]): FieldConfig[] {
+  return [
+    { name: "name", label: "Nome pacchetto", required: true, width: "full" },
+    {
+      name: "duration_months",
+      label: "Durata (mesi)",
+      type: "number",
+      required: true,
+    },
+    { name: "price", label: "Prezzo (€)", type: "number", required: true },
+    {
+      name: "discipline_id",
+      label: "Disciplina (facoltativa)",
+      type: "select",
+      options: disciplines,
+      width: "full",
+    },
+    { name: "active", label: "Attivo", type: "checkbox" },
+  ];
+}
