@@ -33,7 +33,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "ANALISI",
     items: [
       { label: "Report", href: "/report", symbol: "▥", permission: "reports.read" },
-      { label: "Impostazioni", href: "/impostazioni", symbol: "⚙", permission: "organization.manage" },
+      { label: "Impostazioni", href: "/impostazioni", symbol: "⚙", permission: "facilities.manage" },
     ],
   },
 ];

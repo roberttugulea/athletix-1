@@ -837,6 +837,44 @@ export type Database = {
           },
         ]
       }
+      disciplines: {
+        Row: {
+          active: boolean
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disciplines_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discounts: {
         Row: {
           athlete_id: string | null
@@ -1376,6 +1414,7 @@ export type Database = {
           activity_type_id: string | null
           capacity: number | null
           created_at: string
+          discipline_id: string | null
           facility_id: string
           id: string
           name: string
@@ -1388,6 +1427,7 @@ export type Database = {
           activity_type_id?: string | null
           capacity?: number | null
           created_at?: string
+          discipline_id?: string | null
           facility_id: string
           id?: string
           name: string
@@ -1400,6 +1440,7 @@ export type Database = {
           activity_type_id?: string | null
           capacity?: number | null
           created_at?: string
+          discipline_id?: string | null
           facility_id?: string
           id?: string
           name?: string
@@ -1413,6 +1454,13 @@ export type Database = {
             columns: ["activity_type_id"]
             isOneToOne: false
             referencedRelation: "activity_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "groups_discipline_id_fkey"
+            columns: ["discipline_id"]
+            isOneToOne: false
+            referencedRelation: "disciplines"
             referencedColumns: ["id"]
           },
           {
