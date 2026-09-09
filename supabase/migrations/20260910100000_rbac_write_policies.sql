@@ -35,7 +35,6 @@ begin
       ('training_sessions',     'attendance.manage'),
       ('trial_lessons',         'people.manage'),
       ('competitions',          'competitions.manage'),
-      ('competition_results',   'competitions.manage'),
       ('events',                'communications.manage'),
       ('communications',        'communications.manage')
     ) as t(tbl, perm)
@@ -49,3 +48,21 @@ begin
     );
   end loop;
 end $$;
+
+-- competition_results: nessun organization_id, tenant via competitions.
+drop policy if exists competition_results_manage on public.competition_results;
+create policy competition_results_manage on public.competition_results for all
+  using (
+    exists (
+      select 1 from public.competitions c
+      where c.id = competition_id
+        and public.has_organization_permission(c.organization_id, 'competitions.manage')
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.competitions c
+      where c.id = competition_id
+        and public.has_organization_permission(c.organization_id, 'competitions.manage')
+    )
+  );
