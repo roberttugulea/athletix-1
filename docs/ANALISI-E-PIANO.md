@@ -378,13 +378,12 @@ Codice completo (commit `397c478`…`a6e2bfe`), `pnpm lint` + `pnpm build` + `pn
 
 ### Fase 4 — Amministrazione economica (billing misto)
 Decisioni committente: quota **mensile** + **pacchetti a durata (3 e 9 mesi)**; **niente carnet a ingressi**; tutti i metodi di pagamento (contanti/POS/bonifico/online, esito online registrato a mano per ora); ricevute a **progressivo annuo** (`n/AAAA`); valuta **EUR**.
-- 4.1 ✅ `2e8eba0` — Quote mensili: `fee_plans` CRUD, RPC `generate_monthly_fees` (rateo + esoneri), `/abbonamenti/quote` con filtri/totali/aggiorna-stati. Migration `20260913090000`.
-- 4.2 ⏳ Pacchetti a durata: tabelle nuove `subscription_plans` + `subscriptions` (attiva su atleta, `ends_on` = inizio + durata, prezzo congelato).
+- 4.1 ✅ `2e8eba0` — Quote mensili: `fee_plans` CRUD, RPC `generate_monthly_fees` (rateo + esoneri), `/abbonamenti/quote`. Migration `20260913090000`.
+- 4.2 ✅ `0b85ec2` — Pacchetti a durata: tabelle `subscription_plans` + `subscriptions`, RPC `create_subscription` (`ends_on` = inizio + durata − 1g, prezzo congelato). `/abbonamenti/piani-pacchetto` + sezione nella scheda atleta. Migration `20260913100000`.
 - 4.3 ~~Carnet a ingressi~~ — escluso dal committente.
-- 4.4 ⏳ Pagamenti: `payments` esistente (con trigger di immutabilità → nessun update/delete; l'annullamento è un rimborso). Aggiungere `payments.subscription_id`. Registra pagamento contro una quota o un abbonamento.
-- 4.5 ⏳ Rimborsi (`refunds`, totale o parziale; il pagamento originale resta).
-- 4.6 ⏳ Ricevute: contatore per organizzazione+anno, numero `n/AAAA`.
-- Test T06, T07.
+- 4.4 / 4.5 / 4.6 ✅ `5ccfc8a` — Pagamenti (`/pagamenti`, precompilato da quota o pacchetto), rimborsi (parziali, pagamento originale invariato), ricevute a **progressivo annuo `n/AAAA`** (contatore per organizzazione). RPC `record_payment` / `record_refund` / `issue_receipt`. Migration `20260913110000`.
+- **Fase 4 completa.** Tutto verificato a runtime. Metodi: contanti / POS / bonifico / online / altro. Valuta EUR.
+- Test T06 (pagamento tracciato) e T07 (rimborso parziale, originale invariato): coperti dai test manuali; da automatizzare.
 
 ### Fase 5 — Documenti & scadenze
 - 5.1 Upload su bucket privato + policy Storage. 5.2 Certificati medici (+ alert). 5.3 Tesseramenti FITA (+ alert). 5.4 Job `notify_expiring_documents` → `notifications`.
