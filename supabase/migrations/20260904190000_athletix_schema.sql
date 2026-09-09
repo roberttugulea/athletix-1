@@ -24,7 +24,7 @@ create table public.organization_settings (
  private_documents_bucket text not null default 'private-documents', fee_grace_days smallint not null default 5 check (fee_grace_days between 0 and 31),
  updated_at timestamptz not null default now()
 );
-create table public.permissions (id uuid primary key default gen_random_uuid(), key text not null unique check (key ~ '^[a-z]+(\\.[a-z_]+)+$'), description text not null);
+create table public.permissions (id uuid primary key default gen_random_uuid(), key text not null unique check (key ~ '^[a-z]+(\.[a-z_]+)+$'), description text not null);
 create table public.roles (
  id uuid primary key default gen_random_uuid(), organization_id uuid references public.organizations(id) on delete cascade,
  name text not null, description text, is_system boolean not null default false, created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
