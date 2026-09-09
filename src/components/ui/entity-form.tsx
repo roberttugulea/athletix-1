@@ -15,6 +15,7 @@ export type FieldConfig = {
     | "date"
     | "time"
     | "datetime-local"
+    | "month"
     | "number"
     | "select"
     | "checkbox"

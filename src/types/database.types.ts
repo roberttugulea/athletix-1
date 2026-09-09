@@ -2532,6 +2532,10 @@ export type Database = {
         Args: { p_amount: number; p_joined_on: string; p_period: string }
         Returns: number
       }
+      generate_monthly_fees: {
+        Args: { p_fee_plan: string; p_period: string }
+        Returns: number
+      }
       generate_sessions_for_group: {
         Args: { p_from: string; p_group: string; p_to: string }
         Returns: number
