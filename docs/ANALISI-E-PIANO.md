@@ -364,8 +364,10 @@ Codice completo (commit `397c478`…`a6e2bfe`), `pnpm lint` + `pnpm build` + `pn
 - 2.2 ✅ `42823f2` — Atleti: list con ricerca + filtro stato (form GET, zero JS), `/atleti/nuovo`, `/atleti/[id]` scheda (modifica + archivia/ripristina). Helper condivisi `src/server/actions/_helpers.ts`. `ListToolbar`.
 - 2.3 ✅ `77427de` — Tutori nella scheda atleta: aggiunta/rimozione, referente unico, limite 2 (trigger). Migration `20260911120000` (policy RLS `athlete_guardians`).
 - 2.4 ✅ `3aea19d` — Coach: CRUD speculare agli atleti; qualifiche come lista separata da virgola.
-- 2.5 ⏳ Gruppi ("corsi") + `group_schedule_slots` (vincolo GiST anti-overlap: gestire errore 23P01) + capienza + assegnazione coach/atleti. 2.6 Categorie generali (`kind`) + migrazione dati `weight_categories` + FK `competition_results`.
-- Tutti gli incrementi 2.1–2.4 verificati a runtime. Commit + push per incremento.
+- 2.5 ✅ `f234397` — Gruppi: `/gruppi` list (ricerca + filtro stagione), `/gruppi/nuovo`, `/gruppi/[id]` con sezioni **Fasce orarie** (vincolo GiST anti-overlap → 23P01 intercettato), **Coach** (`is_lead`), **Atleti** (controllo capienza). Migration `20260911140000` (policy RLS `athlete_groups` / `coach_groups`).
+- 2.6 ✅ `cef83e8` — Categorie: migration `20260911160000` sostituisce `weight_categories` con `categories` generali (`kind`) + `athlete_categories`, migra i dati, riaggancia `competition_results.category_id`. CRUD `/categorie` + sezione "Categorie" nella scheda atleta.
+- **Fase 2 completa.** Tutti gli incrementi verificati a runtime; commit + push per incremento.
+- ⚠️ Nota Turbopack: svuotare `.next/` quando si aggiungono route sotto un segmento che prima aveva solo `page.tsx` (il dev server con cache filesystem non le rileva; `pnpm build` non è affetto).
 
 ### Fase 3 — Calendario, iscrizioni, presenze
 - 3.1 Generazione `training_sessions` dagli slot + calendario giorno/settimana/mese. 3.2 Iscrizione atleti ai gruppi (`athlete_groups`) con controllo capienza. 3.3 Presenze (registro, bulk, audit) + area coach base. 3.4 Prove gratuite (`trial_lessons`).
