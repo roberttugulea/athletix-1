@@ -74,6 +74,45 @@ export type Database = {
           },
         ]
       }
+      athlete_categories: {
+        Row: {
+          athlete_id: string
+          category_id: string
+          measured_value: number | null
+          valid_from: string
+          valid_to: string | null
+        }
+        Insert: {
+          athlete_id: string
+          category_id: string
+          measured_value?: number | null
+          valid_from?: string
+          valid_to?: string | null
+        }
+        Update: {
+          athlete_id?: string
+          category_id?: string
+          measured_value?: number | null
+          valid_from?: string
+          valid_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athlete_categories_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "athletes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athlete_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       athlete_facilities: {
         Row: {
           athlete_id: string
@@ -181,45 +220,6 @@ export type Database = {
             columns: ["guardian_id"]
             isOneToOne: false
             referencedRelation: "guardians"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      athlete_weight_categories: {
-        Row: {
-          athlete_id: string
-          measured_kg: number | null
-          valid_from: string
-          valid_to: string | null
-          weight_category_id: string | null
-        }
-        Insert: {
-          athlete_id: string
-          measured_kg?: number | null
-          valid_from: string
-          valid_to?: string | null
-          weight_category_id?: string | null
-        }
-        Update: {
-          athlete_id?: string
-          measured_kg?: number | null
-          valid_from?: string
-          valid_to?: string | null
-          weight_category_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "athlete_weight_categories_athlete_id_fkey"
-            columns: ["athlete_id"]
-            isOneToOne: false
-            referencedRelation: "athletes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "athlete_weight_categories_weight_category_id_fkey"
-            columns: ["weight_category_id"]
-            isOneToOne: false
-            referencedRelation: "weight_categories"
             referencedColumns: ["id"]
           },
         ]
@@ -383,6 +383,63 @@ export type Database = {
           },
           {
             foreignKeyName: "audit_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
+        Row: {
+          active: boolean
+          created_at: string
+          discipline_id: string | null
+          id: string
+          kind: string
+          max_value: number | null
+          min_value: number | null
+          name: string
+          organization_id: string
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          discipline_id?: string | null
+          id?: string
+          kind: string
+          max_value?: number | null
+          min_value?: number | null
+          name: string
+          organization_id: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          discipline_id?: string | null
+          id?: string
+          kind?: string
+          max_value?: number | null
+          min_value?: number | null
+          name?: string
+          organization_id?: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_discipline_id_fkey"
+            columns: ["discipline_id"]
+            isOneToOne: false
+            referencedRelation: "disciplines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -722,6 +779,7 @@ export type Database = {
       competition_results: {
         Row: {
           athlete_id: string
+          category_id: string | null
           competition_id: string
           created_at: string
           discipline: string | null
@@ -730,10 +788,10 @@ export type Database = {
           placement: number | null
           score: number | null
           updated_at: string
-          weight_category_id: string | null
         }
         Insert: {
           athlete_id: string
+          category_id?: string | null
           competition_id: string
           created_at?: string
           discipline?: string | null
@@ -742,10 +800,10 @@ export type Database = {
           placement?: number | null
           score?: number | null
           updated_at?: string
-          weight_category_id?: string | null
         }
         Update: {
           athlete_id?: string
+          category_id?: string | null
           competition_id?: string
           created_at?: string
           discipline?: string | null
@@ -754,7 +812,6 @@ export type Database = {
           placement?: number | null
           score?: number | null
           updated_at?: string
-          weight_category_id?: string | null
         }
         Relationships: [
           {
@@ -765,17 +822,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "competition_results_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "competition_results_competition_id_fkey"
             columns: ["competition_id"]
             isOneToOne: false
             referencedRelation: "competitions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "competition_results_weight_category_id_fkey"
-            columns: ["weight_category_id"]
-            isOneToOne: false
-            referencedRelation: "weight_categories"
             referencedColumns: ["id"]
           },
         ]
@@ -2447,44 +2504,6 @@ export type Database = {
           },
           {
             foreignKeyName: "trial_lessons_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      weight_categories: {
-        Row: {
-          created_at: string
-          id: string
-          max_kg: number | null
-          min_kg: number | null
-          name: string
-          organization_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          max_kg?: number | null
-          min_kg?: number | null
-          name: string
-          organization_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          max_kg?: number | null
-          min_kg?: number | null
-          name?: string
-          organization_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "weight_categories_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
