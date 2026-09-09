@@ -1,0 +1,418 @@
+# ATHLETIX — Analisi dello stato attuale, architettura e piano di implementazione
+
+> Documento generato dall'analisi di:
+> - specifica `ATHLETIX_Specifiche_Completo_per_AI.xlsx` (14 schede: 00_ISTRUZIONI → 13_PROMPT_AI)
+> - stato del repository al commit `53f08ff` ("Initial ATHLETIX scaffold")
+>
+> Nessun codice è stato modificato. Le decisioni marcate **DA DEFINIRE** non vanno inventate: vanno confermate prima di implementare la fase relativa (vedi §12).
+
+---
+
+## 1. Stato attuale del repository
+
+### 1.1 Cosa c'è
+
+| Ambito | Dettaglio |
+|---|---|
+| Framework | Next.js **16.3.4**, React **19.2.8**, App Router, TypeScript `strict`, Tailwind CSS v4 (`@tailwindcss/postcss`), ESLint 9 flat config. Package manager **pnpm@11.19.0** |
+| `src/app/` | `layout.tsx` (`<html lang="it">`, metadata), `page.tsx` (mockup **statico** `"use client"` della dashboard: nav hardcoded, nessun dato reale, solo empty-state), `globals.css` (~9.7 KB, stile del mockup), `favicon.ico` |
+| Database | `supabase/migrations/20260904190000_athletix_schema.sql` — **schema completo** (~45 tabelle) con RLS deny-by-default, funzioni, trigger, seed dei permessi. Nessun dato operativo |
+| Doc | `docs/database.md` (descrizione schema), `AGENTS.md` (avviso: Next.js 16 ha breaking changes, leggere `node_modules/next/dist/docs/` prima di scrivere codice), `CLAUDE.md` → `@AGENTS.md` |
+| Config | `.env.example` (3 variabili Supabase: URL, anon key, service role key), `.gitignore` ignora `.env*` ✓, `next.config.ts` vuoto |
+| Git | 1 solo commit su `main`, allineato a `origin/main`. Remote `https://github.com/roberttugulea/athletix-1.git`. User git: `roberttugulea` |
+
+### 1.2 Cosa NON c'è — l'application layer è a ~0%
+
+- Nessun client Supabase (`@supabase/supabase-js` / `@supabase/ssr` **non** in `package.json`).
+- Nessuna autenticazione, nessun `middleware.ts`, nessuna gestione sessione.
+- Nessuna route oltre `/`. Nessuna server action, nessun route handler / API.
+- Nessun data layer, nessun componente riutilizzabile oltre al mockup.
+- Nessun test, nessun test runner, nessuna CI.
+- Nessun tipo generato dal DB.
+
+### 1.3 Toolchain mancante sulla macchina — **BLOCCANTE per l'implementazione**
+
+`node`, `pnpm` e `git` **non sono installati / non sono in PATH** su questo PC (è presente solo Chocolatey). Il `node_modules/` e `.next/` presenti provengono da un altro ambiente.
+
+Tentativo di installazione via Chocolatey da questa sessione **fallito**: `choco` richiede una shell elevata (accesso negato a `C:\ProgramData\chocolatey`) e non è possibile rispondere al prompt UAC in modo non interattivo. L'installazione va fatta manualmente:
+
+```powershell
+# PowerShell APERTA COME AMMINISTRATORE
+choco install -y nodejs-lts git
+npm install -g pnpm@11.19.0
+# poi chiudere e riaprire il terminale, verificare:
+node -v ; pnpm -v ; git --version
+```
+
+In alternativa, `winget install OpenJS.NodeJS.LTS Git.Git` (accettando i prompt UAC), o installazione portable senza admin (Node zip + MinGit in una cartella utente, aggiunte al PATH).
+
+La fase di analisi/architettura non ne ha bisogno; **tutte le fasi successive sì**.
+
+---
+
+## 2. Divergenza tra Excel e schema dello scaffold — **DECISIONE CHIAVE**
+
+Lo schema SQL già presente **non è generico**: modella un club sportivo italiano reale, con orientamento a tiro con l'arco / sport a categorie di peso. Include `fita_memberships` (Federazione Italiana), `weight_categories`, `competitions` / `competition_calls` / `competition_results`, `guardians` per i minori, quote mensili con **proratazione**, **ricevute**, storico finanziario **immutabile** via trigger, vincolo **GiST** anti-sovrapposizione sugli orari.
+
+L'Excel (schede 03_FUNZIONALITA / 04_PAGINE / 05_DATI) descrive un **impianto sportivo / centro fitness più generico**: prenotazioni self-service, area atleta con login, abbonamenti a piani, schede di allenamento.
+
+### 2.1 Confronto dei modelli
+
+| Concetto | Excel (05_DATI) | Schema dello scaffold |
+|---|---|---|
+| RBAC | `profiles.role` enum (`admin`/`secretary`/`coach`/`athlete`) | `permissions` + `roles` + `member_roles` + `role_permissions` (permission key granulari) |
+| Legame multi-tenant | `organization_id` sulle tabelle + `profiles.organization_id` | `organization_members` (un profilo in più org); `profiles` **senza** `organization_id` |
+| Corsi | `courses` + `course_sessions` | `groups` + `group_schedule_slots` + `training_sessions` (+ `seasons`, `facilities`, `spaces`, `activity_types`) |
+| Prenotazioni | `bookings` + `attendance` (l'atleta prenota la sessione) | **nessuna tabella `bookings`**; solo `attendances`; l'atleta è assegnato al gruppo via `athlete_groups` |
+| Abbonamenti | `subscription_plans` + `subscriptions` (inizio/fine/stato) | `fee_plans` + `monthly_fees` (periodi mensili, proratazione) + `discounts` + `exemptions` |
+| Pagamenti | `payments` + `refunds` | `payments` + `refunds` + `receipts` + trigger di immutabilità |
+| Tesseramenti | `memberships` generico | `fita_memberships` (specifico federazione) |
+| Certificati | `certificates` generico | `medical_certificates` |
+| Categorie | `categories` + `athlete_categories` (generiche) | `weight_categories` + `athlete_weight_categories` (solo peso) |
+| Schede allenamento | `workout_plans` | **assente** |
+| Notifiche | `notifications` (feed in-app per utente) | `communications` + `communication_recipients` (broadcast; nessun feed per-utente) |
+| Tutori / minori | assente | `guardians` + `athlete_guardians` (max 2, trigger) |
+| Gare | assente | `competitions` + `competition_calls` + `competition_results` |
+| Prove gratuite | assente (coperto da F07) | `trial_lessons` |
+| Eventi | assente | `events` + `event_attendees` |
+| Atleta ↔ account | l'Excel implica login atleta (F23 area atleta, `role='athlete'`) | gli `athletes` **non** sono collegati a `profiles`/`auth.users`: nessun percorso di login per l'atleta |
+
+### 2.2 Conseguenza — due strade
+
+**Opzione A (RACCOMANDATA) — Estendere lo schema dello scaffold.**
+Lo schema esistente è più maturo, più corretto per il contesto italiano e già dotato di RLS/trigger/audit. Si tiene come backbone e si aggiungono **solo** i pezzi mancanti dell'Excel, tutti con migration **additive**:
+- `bookings` (prenotazione self-service a `training_sessions`, capienza, waitlist) — **solo se** le regole di prenotazione servono davvero (DA DEFINIRE C06);
+- `workout_plans` + `workout_plan_items` (F15);
+- `notifications` per-utente (feed in-app, F16) accanto a `communications` (broadcast);
+- collegamento **atleta ↔ account** (`athletes.profile_id` nullable) per abilitare area atleta/tutore (F23);
+- mapping ruoli Excel → bundle di permission key (ruoli di sistema "Amministratore / Segreteria / Coach / Atleta").
+- `subscription_plans` / `subscriptions` **non** servono: `fee_plans` + `monthly_fees` li coprono meglio (da confermare).
+
+Costo: **basso-medio**. Rischio: **basso**. Nessuna riscrittura.
+
+**Opzione B — Rifare lo schema aderente all'Excel (scheda 05_DATI).**
+Si scarta gran parte dello schema e si ricostruiscono ~25 tabelle come da foglio DATI.
+Costo: **alto**. Rischio: **alto** — si perdono proratazione, ricevute, immutabilità, gestione minori, competizioni, vincolo GiST anti-overlap già scritti. Va contro la regola "preserva il lavoro funzionante" (scheda 01 / 13).
+
+> **DECISIONE PRESA (2026-09-09):** si procede con **Opzione A estesa**.
+> Contesto reale confermato dal committente: centro **polisportivo multi-disciplina**; abbonamenti **misti** (quota mensile ricorrente + pacchetti a durata + carnet a ingressi); **nessuna** prenotazione self-service alle singole sessioni (solo iscrizione ai gruppi). Vedi §2.3.
+
+### 2.3 Cosa comporta l'Opzione A estesa
+
+Si tiene il backbone dello scaffold (RBAC a permessi, `seasons`/`facilities`/`spaces`/`groups`/`group_schedule_slots`, storico finanziario immutabile, audit, `guardians`, vincolo GiST). Si **generalizza** ciò che è troppo specifico e si **aggiunge** il modello di billing misto. Tutte migration **additive**.
+
+| Intervento | Da | A |
+|---|---|---|
+| Tesseramenti | `fita_memberships` (FITA-centrico) | rinominata `federation_memberships`; campo `federation` libero + tabella `federations` per organizzazione (multi-federazione) |
+| Categorie | `weight_categories` + `athlete_weight_categories` (solo peso) | `categories(kind: age\|weight\|discipline\|level\|other, name, min_value, max_value, unit, discipline_id)` + `athlete_categories(valid_from, valid_to, measured_value)`; dati peso migrati; FK `competition_results` aggiornata |
+| Discipline | implicite in `activity_types` | `disciplines` per organizzazione; `groups.discipline_id`, `categories.discipline_id` |
+| Abbonamenti | solo `fee_plans` + `monthly_fees` (quota mensile) | **+** `subscription_plans` + `subscriptions` (pacchetti a durata) **+** `pass_plans` + `athlete_passes` (carnet a ingressi, decremento su presenza/iscrizione) |
+| Pagamenti | `payments.monthly_fee_id` unico aggancio | aggancio generalizzato: `monthly_fee_id` \| `subscription_id` \| `athlete_pass_id` (check: al più uno) |
+| Prenotazioni | previste `bookings` | **non si fanno**: iscrizione ad `athlete_groups`; nessuna tabella `bookings` |
+| Atleta ↔ account | non collegati | `athletes.profile_id` nullable → area atleta/tutore |
+| Schede allenamento | assenti | `workout_plans` + `workout_plan_items` |
+| Notifiche per-utente | solo `communications` broadcast | **+** `notifications(user_id, ...)` feed in-app |
+
+Cosa **non** cambia e resta un valore dello scaffold: proratazione (`calculate_prorated_fee`), ricevute immutabili, gestione minori/tutori (max 2), gare/convocazioni/risultati, `trial_lessons`, `events`, anti-sovrapposizione oraria GiST, audit, RLS deny-by-default.
+
+---
+
+## 3. Architettura proposta (Opzione A estesa)
+
+### 3.1 Librerie da aggiungere
+
+| Scopo | Scelta proposta |
+|---|---|
+| Client Supabase | `@supabase/ssr` + `@supabase/supabase-js` (auth via cookie, server + browser) |
+| Validazione | `zod` (schema condivisi client/server) |
+| Data fetching | **Server Components** + **server actions** per le mutation. Niente client fetching finché non serve; `@tanstack/react-query` solo se emergerà un bisogno |
+| Form | `useActionState` (Next 16) + `zod`. `react-hook-form` opzionale per i form complessi |
+| UI | Componenti propri su Tailwind v4. Primitivi accessibili con `@radix-ui/react-*` (Dialog, Dropdown, Popover, Tabs) |
+| Date/timezone | `date-fns` + `date-fns-tz` (`Europe/Rome`) |
+| Test | `vitest` + `@testing-library/react` (unit/componenti); `@playwright/test` (e2e sui flussi critici); test RLS con script anon-key vs service-key |
+| Format | `prettier` (opzionale) |
+
+### 3.2 Struttura cartelle target
+
+```
+src/
+  app/
+    (auth)/            login/  recupera-password/  reset-password/
+    auth/callback/route.ts
+    (app)/             layout con sidebar per ruolo + guardia sessione
+      dashboard/
+      atleti/                  [id]/
+      coach/                   [id]/
+      gruppi/                  [id]/        (= "corsi" dell'Excel)
+      calendario/
+      presenze/
+      quote/                                (fee_plans + monthly_fees; label UI "Abbonamenti/Quote")
+      pagamenti/               [id]/
+      tesseramenti/
+      certificati/
+      categorie/
+      gare-eventi/
+      comunicazioni/
+      report/
+      impostazioni/            organizzazione/  utenti/  strutture/  spazi/  stagioni/
+    (athlete)/         area-atleta/...        layout separato, atleta/tutore
+    (coach)/           area-coach/...         opzionale se serve UI distinta dall'area (app)
+    api/                                      solo dove serve (webhook pagamenti, cron)
+  components/ui/        components/<dominio>/
+  lib/
+    supabase/          server.ts  client.ts  middleware.ts
+    auth/              session.ts  permissions.ts   (RBAC helper server-side)
+    validation/        <entità>.ts               (schema zod)
+    db/                query helper tipizzati
+  server/actions/      <entità>.ts               (server action: assertPermission → zod → mutation → revalidate)
+  types/               database.types.ts         (generato: supabase gen types)
+middleware.ts                                    (refresh sessione + redirect non autenticati)
+supabase/migrations/                             (nuove migration numerate; NON editare la 20260904190000)
+```
+
+### 3.3 Multi-tenant & sessione
+
+- Autenticazione con **Supabase Auth** (email/password + recupero password).
+- Un `profile` può avere più righe in `organization_members` → serve un **selettore organizzazione** e un `organization_id` "attivo" per la sessione. Proposta: cookie `athletix-org`, **validato server-side a ogni richiesta** contro le `organization_members` attive dell'utente.
+- Ogni server action prende l'org attiva dal context server, **mai dal client**.
+- RLS resta l'ultima linea di difesa; i controlli di permesso lato server sono **in aggiunta**, non in sostituzione (scheda 09).
+
+### 3.4 RBAC — mapping ruoli Excel → permessi dello scaffold
+
+Permission key già presenti nello schema:
+`organization.manage`, `facilities.manage`, `people.manage`, `groups.manage`, `finance.manage`, `attendance.manage`, `competitions.manage`, `communications.manage`, `reports.read`, `documents.manage`.
+
+4 **ruoli di sistema** come bundle:
+
+| Ruolo (Excel 02_RUOLI) | Permessi assegnati |
+|---|---|
+| Amministratore/Titolare | `organization.manage` (implica tutto negli helper) |
+| Segreteria/Operatore | `people.manage`, `groups.manage`, `finance.manage`, `attendance.manage`, `communications.manage`, `documents.manage`, `reports.read`, `facilities.manage` (configurabile dall'admin) |
+| Coach/Istruttore | `attendance.manage` + **lettura ristretta** a gruppi/atleti assegnati via `coach_groups` / `coach_facilities` (nessun dato finanziario) |
+| Atleta/Cliente (o Tutore) | nessun permesso org; accesso ai **propri** dati via policy `*_self` basate su `athletes.profile_id` / `guardians.profile_id` |
+
+> **Problema RLS attuale da correggere (lavoro principale della Fase 1):** le policy generate `<t>_read` fanno `using (is_organization_member(organization_id))`. Effetto: un **Coach** vede *tutti* gli atleti/pagamenti dell'org; un **Atleta** (che non è `organization_member`) non vede *nulla*. Va:
+> - ristretta la lettura operativa per chi ha solo il permesso coach;
+> - aggiunte policy `self` per Atleta/Tutore;
+> - aggiunte funzioni `is_athlete_self(uuid)`, `is_guardian_of(uuid)`, `is_coach_of_group(uuid)`, `is_coach_of_athlete(uuid)`;
+> - aggiunta policy di lettura su `audit_logs` (oggi ha solo `enable`, nessuna policy).
+
+### 3.5 Storico immutabile & audit
+
+Già implementati: trigger `immutable_financial_history` su `payments`/`refunds`/`receipts`; `audit_row()` su 16 tabelle; `set_updated_at()` ovunque. Da fare: policy di lettura audit; eventuale estensione audit a `fee_plans`, `discounts`, `exemptions`, `weight_categories`, `group_schedule_slots` (scheda 09).
+
+---
+
+## 4. Schema DB — interventi (tutte migration **additive**, numerate dopo `20260904190000`)
+
+| Migration (nome indicativo) | Contenuto |
+|---|---|
+| `20260910_rbac_system_roles.sql` | funzione `provision_organization()` (org + settings + 4 ruoli di sistema + primo admin, in transazione); funzioni `is_athlete_self`, `is_guardian_of`, `is_coach_of_group`, `is_coach_of_athlete` |
+| `20260910_athlete_account_link.sql` | `athletes.profile_id uuid null references profiles(id)` + unique parziale; policy self-read su `athletes`, `monthly_fees`, `payments`/`subscriptions`/`athlete_passes` (solo propri), `medical_certificates`, `federation_memberships`, `attendances`, `athlete_groups`, `training_sessions` dei propri gruppi, `communication_recipients` |
+| `20260910_coach_scope.sql` | restringe la lettura operativa per il solo permesso coach a ciò che è collegato via `coach_groups`; nega i dati finanziari |
+| `20260910_audit_read.sql` | policy `select` su `audit_logs` per `organization.manage` |
+| `20260911_disciplines_categories.sql` | `disciplines` per organizzazione; `categories` + `athlete_categories` generali (`kind`); migra i dati `weight_categories` → `categories`, aggiorna la FK di `competition_results`; `groups.discipline_id` |
+| `20260911_federation_memberships.sql` | rename `fita_memberships` → `federation_memberships`; tabella `federations` per organizzazione; il campo `federation` diventa configurabile |
+| `20260912_subscriptions.sql` | `subscription_plans` (durata, prezzo, ambito disciplina/gruppo) + `subscriptions` (atleta, piano, `starts_on`/`ends_on`, stato, importo) |
+| `20260912_passes.sql` | `pass_plans` (n. ingressi, prezzo, validità) + `athlete_passes` (`entries_total`/`entries_used`/`expires_on`/stato) + azione di decremento su presenza/iscrizione |
+| `20260912_payments_payable.sql` | aggiunge a `payments` le colonne nullable `subscription_id`, `athlete_pass_id` + check "al più un payable" (`monthly_fee_id` \| `subscription_id` \| `athlete_pass_id`) |
+| `20260913_workout_plans.sql` | `workout_plans(id, organization_id, athlete_id, coach_id, title, starts_on, ends_on, notes, status)` + `workout_plan_items(id, plan_id, day_index, exercise, sets, reps, load, rest_seconds, notes, sort)`; RLS coach assegnato + atleta self |
+| `20260913_notifications.sql` | `notifications(id, organization_id, user_id → profiles, type, title, body, entity_table, entity_id, read_at, created_at)`; policy `user_id = auth.uid()` |
+| `20260913_settings_and_jobs.sql` | estende `organization_settings`: `certificate_alert_days`, `membership_alert_days`, `receipt_number_format` (**DA DEFINIRE**); funzione `notify_expiring_documents()` |
+
+Dopo **ogni** migration: `supabase gen types typescript` → `src/types/database.types.ts`.
+
+---
+
+## 5. Pagine / route — mappa Excel P01–P18 → target
+
+| Excel | Route target | Note |
+|---|---|---|
+| P01 Login | `/(auth)/login` | + `/recupera-password`, `/reset-password` |
+| P02 Dashboard | `/(app)/dashboard` | KPI e widget filtrati per ruolo/organizzazione |
+| P03 Atleti | `/(app)/atleti` | lista, ricerca, filtri, archivia |
+| P04 Scheda atleta | `/(app)/atleti/[id]` | anagrafica, tutori, quote, certificati, tessera, gruppi, presenze, storico |
+| P05 Coach | `/(app)/coach` , `/coach/[id]` | anagrafica + associazioni |
+| P06 Corsi | `/(app)/gruppi` , `/gruppi/[id]` | "corsi" = `groups`; capienza, coach, slot orari |
+| P07 Calendario | `/(app)/calendario` | vista giorno/settimana/mese; presenze secondo ruolo. Nessuna prenotazione: iscrizione ai gruppi |
+| P08 Abbonamenti | `/(app)/abbonamenti` | quote mensili (`fee_plans`/`monthly_fees`), pacchetti a durata (`subscriptions`), carnet a ingressi (`athlete_passes`); atleta in sola lettura nell'area atleta |
+| P09 Pagamenti | `/(app)/pagamenti` , `/pagamenti/[id]` | registra, void, rimborso; storico append-only |
+| P10 Tesseramenti | `/(app)/tesseramenti` | `fita_memberships` + scadenze |
+| P11 Certificati | `/(app)/certificati` | `medical_certificates`; documento su bucket privato |
+| P12 Categorie | `/(app)/categorie` | `categories` generali (età/peso/disciplina/livello) + `disciplines` |
+| P13 Presenze | `/(app)/presenze` | registro per sessione; bulk; audit |
+| P14 Area Coach | `/(coach)/area-coach` o sezione in `(app)` | solo gruppi/atleti/sessioni/presenze/schede propri |
+| P15 Area Atleta | `/(athlete)/area-atleta` | profilo, quote, prenotazioni/calendario propri, certificati, tessera, comunicazioni |
+| P16 Report | `/(app)/report` | KPI, grafici, filtri periodo, export CSV/Excel |
+| P17 Utenti e ruoli | `/(app)/impostazioni/utenti` | invito, disattiva, assegna ruolo, protezione ultimo admin |
+| P18 Impostazioni impianto | `/(app)/impostazioni/organizzazione` | dati org, `organization_settings`, regole |
+| *(extra dallo schema)* | `/impostazioni/strutture`, `/spazi`, `/stagioni`, `/(app)/gare-eventi`, `/comunicazioni` | richiesti da `facilities`/`spaces`/`seasons`/`competitions`/`events`/`communications` |
+
+Le voci di menu non autorizzate **non vengono renderizzate** (scheda 08).
+
+---
+
+## 6. Server actions / API per dominio
+
+Ogni action: `assertPermission(orgAttiva, key)` → `zod.parse(input)` → mutation → (audit automatico via trigger) → `revalidatePath`.
+
+| Dominio | Azioni |
+|---|---|
+| Auth | `signIn`, `signOut`, `requestPasswordReset`, `updatePassword` |
+| Organizzazione | `switchOrganization`, `provisionOrganization`, `updateOrgSettings` |
+| Persone | atleti: `create`/`update`/`archive`/`linkAccount`; guardiani: CRUD + `attachToAthlete`; coach: CRUD + `assignToGroup`/`assignToFacility` |
+| Struttura sportiva | `facilities`/`spaces`/`seasons`/`disciplines` CRUD; `groups` CRUD; `groupScheduleSlots` create/update con gestione conflitto GiST (23P01 → messaggio chiaro) |
+| Iscrizioni | `enrollAthleteInGroup(groupId, startsOn)`, `endEnrollment(ends_on)` su `athlete_groups` con controllo capienza gruppo |
+| Calendario | `generateSessionsFromSlots(range)`, `cancelSession`, `rescheduleSession` |
+| Presenze | `upsertAttendanceBulk(sessionId, righe)` (decrementa il carnet ingressi se applicabile) |
+| Billing – quote | `feePlans` CRUD, `discounts`/`exemptions` CRUD, `generateMonthlyFees(period)`, `runFeeStatusRefresh()` |
+| Billing – pacchetti | `subscriptionPlans` CRUD, `createSubscription`, `renewSubscription`, `cancelSubscription` |
+| Billing – carnet | `passPlans` CRUD, `sellPass`, `consumeEntry`, `refundPass` |
+| Pagamenti | `recordPayment` (→ immutabile, aggancio quota\|pacchetto\|carnet), `voidPayment(reason)`, `createRefund`, `issueReceipt` |
+| Documenti | `uploadPrivateDocument` (bucket privato, path opaco), `attachDocumentTo(entity)` |
+| Tesseramenti / Certificati | CRUD + cambio stato + collegamento documento; `federations` CRUD |
+| Categorie / discipline | `disciplines` CRUD, `categories` CRUD (per `kind`), `assignAthleteCategory(validFrom, measuredValue?)` |
+| Gare | `competitions` CRUD, `competitionCalls` invite/respond, `competitionResults` upsert; `events` + `eventAttendees` |
+| Comunicazioni | `createCommunication`, `setRecipients`, `sendCommunication` (email → provider DA DEFINIRE) |
+| Notifiche | `markNotificationRead`, `markAllRead` |
+| Report | query aggregate read-only + `exportCsv(dataset, filtri)` |
+| Utenti/ruoli | `inviteUser`, `assignRole`, `deactivateMember`, con guardia **"non rimuovere l'ultimo admin"** |
+| Import | `importCsv(dataset)` con validazione e report errori, transazione tutto-o-niente |
+
+---
+
+## 7. Flussi principali (Excel 06_FLUSSI) — note sul comportamento
+
+| Flusso | Note rispetto allo schema attuale |
+|---|---|
+| FL01 Login | Supabase Auth; dopo login carica membership → org attiva → ruolo/permessi |
+| FL02 Creazione atleta | `athletes` nel tenant attivo; validazione zod; audit automatico |
+| FL03 Iscrizione a gruppo | il centro fa **solo iscrizione al gruppo**: `enroll` su `athlete_groups` con controllo capienza; nessuna prenotazione della singola sessione |
+| FL04 Registrazione pagamento | `payments.status='confirmed'` solo su conferma reale; `void` con motivo, mai delete/update (trigger già presente) |
+| FL05 Rimborso | `refunds` collegato al pagamento; pagamento originario invariato ✓ (già garantito dal trigger) |
+| FL06 Scadenza certificato | job `notify_expiring_documents()` → `notifications` (+ email se provider configurato); soglia giorni **DA DEFINIRE** |
+| FL07 Rinnovo abbonamento | nuovo `fee_plan`/periodo o nuova `monthly_fees`; storico conservato |
+| FL08 Presenza | `attendances` upsert; accesso negato a sessioni non proprie (Coach); audit |
+| FL09 Cambio ruolo | `member_roles`; **protezione ultimo admin** da implementare |
+| FL10 Isolamento tenant | RLS + org attiva risolta server-side; nessun `organization_id` dal client |
+
+---
+
+## 8. Sicurezza — mappa scheda 09 → stato
+
+| Requisito | Stato scaffold | Azione |
+|---|---|---|
+| Account sicuri (Supabase Auth) | assente | Fase 1 |
+| RBAC ruoli granulari | parziale (permessi seed) | mapping ruoli + helper — Fase 1 |
+| Isolamento multi-tenant RLS | presente ma **troppo largo** per coach/atleta | restringere + org attiva server-side — Fase 1 |
+| RLS deny-by-default | ✓ presente | mantenere; policy per ogni nuova tabella |
+| Privacy dati sensibili (certificati) | tabelle pronte, bucket no | creare bucket privato `private-documents` + policy Storage — Fase 5 |
+| Storico finanziario append-only | ✓ trigger presenti | estendere audit dove richiesto |
+| Audit log | ✓ presente | + policy di lettura |
+| Segreti fuori dal repo | ✓ `.env.example` + `.gitignore` | mantenere; `.env.local` solo locale |
+| Validazione input client+server | assente | `zod` ovunque — da Fase 1 |
+| Backup / logging / rate-limit | assente | dipende da hosting — **DA DEFINIRE** |
+
+---
+
+## 9. Test — mappa scheda 11 (T01–T12)
+
+| Test Excel | Tipo | File / approccio |
+|---|---|---|
+| T01 Login valido | e2e | `e2e/auth.spec.ts` |
+| T02 Password errata | e2e | `e2e/auth.spec.ts` |
+| T03 Accesso cross-tenant negato | integration RLS | `tests/rls/tenant-isolation.test.ts` (anon-key con utente org A che interroga dati org B) |
+| T04 Creazione atleta valida | integration + e2e | `tests/actions/athletes.test.ts`, `e2e/atleti.spec.ts` |
+| T05 Gruppo pieno | integration | controllo capienza in `enrollAthleteInGroup` |
+| T06 Pagamento registrato | integration | `tests/actions/payments.test.ts` (stato coerente, immutabilità) |
+| T07 Rimborso parziale | integration | pagamento invariato, refund creato |
+| T08 Certificato in scadenza | integration | `notify_expiring_documents()` genera la notifica giusta |
+| T09 Coach apre pagamenti | integration RLS | accesso negato / nessun dato finanziario |
+| T10 Atleta apre profilo | integration RLS + e2e | vede solo i propri dati |
+| T11 Responsive smartphone | e2e | Playwright viewport mobile su tutte le sezioni |
+| T12 Build produzione | CI | `pnpm lint && pnpm build && pnpm test` |
+
+Unit aggiuntivi: `calculate_prorated_fee`, helper permessi, schema zod.
+CI: GitHub Actions su push/PR → lint + build + vitest (+ Playwright opzionale).
+
+---
+
+## 10. Piano a incrementi
+
+Regola per ogni incremento: **piccolo e verificabile** → `pnpm lint` + `pnpm build` + test pertinenti → **commit chiaro** (push solo a progetto verificato e senza segreti).
+
+### Fase 0 — Prerequisiti
+- 0.1 Installare Node LTS + pnpm@11.19.0 + Git sul PC. `pnpm install`. Verificare `pnpm lint` e `pnpm build` sullo scaffold.
+- 0.2 `.env.local` con le credenziali Supabase (già disponibili). Verifica connessione.
+- 0.3 Applicare la migration `20260904190000` al progetto Supabase (se non già applicata). Creare bucket privato `private-documents`.
+- 0.4 `supabase gen types typescript` → `src/types/database.types.ts`.
+
+### Fase 1 — Infrastruttura: auth + tenant + RBAC *(il cuore, come da "PRIORITÀ" scheda 13)*
+- 1.1 `@supabase/ssr`: client server/browser + `middleware.ts` (refresh sessione).
+- 1.2 `/login`, `/recupera-password`, `/reset-password`, `auth/callback`, logout.
+- 1.3 Migration `provision_organization()` + onboarding minimo (crea org, settings, ruoli di sistema, primo admin).
+- 1.4 Selettore organizzazione + risoluzione **org attiva server-side** + `assertPermission`.
+- 1.5 Migration RBAC (ruoli di sistema, funzioni self/coach) + **restrizione policy RLS** coach/atleta + policy lettura audit.
+- 1.6 Layout `(app)` con sidebar **per ruolo** (voci non autorizzate nascoste) + dashboard vuota per ruolo.
+- 1.7 Test: matrice RLS + login e2e. Commit + push.
+
+### Fase 2 — Anagrafiche & struttura sportiva
+- 2.1 Strutture, Spazi, Stagioni, **Discipline**. 2.2 Atleti (CRUD, ricerca, filtri, archivia, scheda) + collegamento account. 2.3 Tutori (minori). 2.4 Coach (CRUD + associazioni). 2.5 Gruppi ("corsi") + slot orari con gestione conflitti GiST + capienza. 2.6 Categorie generali (`kind`: età/peso/disciplina/livello) + migrazione dati `weight_categories`.
+- Test per ogni entità (T04). Commit per incremento.
+
+### Fase 3 — Calendario, iscrizioni, presenze
+- 3.1 Generazione `training_sessions` dagli slot + calendario giorno/settimana/mese. 3.2 Iscrizione atleti ai gruppi (`athlete_groups`) con controllo capienza. 3.3 Presenze (registro, bulk, audit) + area coach base. 3.4 Prove gratuite (`trial_lessons`).
+- Test presenze + iscrizione.
+
+### Fase 4 — Amministrazione economica (billing misto)
+- 4.1 Quote mensili: `fee_plans`, sconti, esoneri, generazione `monthly_fees` + job `refresh_monthly_fee_statuses` (cron). 4.2 Pacchetti a durata: `subscription_plans` + `subscriptions` (attiva/rinnova/annulla). 4.3 Carnet a ingressi: `pass_plans` + `athlete_passes` + decremento su presenza. 4.4 Pagamenti (aggancio quota\|pacchetto\|carnet, registra → immutabile, void con motivo). 4.5 Rimborsi. 4.6 Ricevute *(formato numero DA DEFINIRE)*.
+- Test T06, T07.
+
+### Fase 5 — Documenti & scadenze
+- 5.1 Upload su bucket privato + policy Storage. 5.2 Certificati medici (+ alert). 5.3 Tesseramenti FITA (+ alert). 5.4 Job `notify_expiring_documents` → `notifications`.
+- Test T08.
+
+### Fase 6 — Aree self-service
+- 6.1 Area atleta/tutore (profilo, quote, certificati, tessera, calendario/prenotazioni propri, comunicazioni). 6.2 Area coach completa. 6.3 Schede allenamento (`workout_plans`).
+- Test T09, T10.
+
+### Fase 7 — Comunicazione, gare, report, utenti
+- 7.1 Comunicazioni (draft/schedule/send) + destinatari (+ email provider **DA DEFINIRE**). 7.2 Feed notifiche in-app. 7.3 Gare + convocazioni + risultati + eventi. 7.4 Report/KPI + export CSV/Excel. 7.5 Gestione utenti e ruoli (invito, disattiva, assegna ruolo, protezione ultimo admin). 7.6 Ricerca globale. 7.7 Viewer audit log. Import controllato.
+- Test T12 (build), coerenza report.
+
+### Fase 8 — Lancio
+Checklist scheda 12: build + lint puliti; tutte le migration applicate; matrice RLS verificata; test verdi; bucket privato + policy; backup Supabase; monitoring/hosting (**DA DEFINIRE**); dominio (**DA DEFINIRE**); `.env` solo nomi nel repo. Riepilogo finale: modifiche, test, rischi, prossimi passi.
+
+---
+
+## 11. Rischi
+
+- **Toolchain assente**: nessun avanzamento reale finché Node/pnpm/Git non sono installati (§1.3). Chocolatey richiede shell elevata.
+- **RLS troppo larga** per coach/atleta nello scaffold: rischio privacy finché non ristretta (Fase 1.5).
+- **Billing misto** (§2.3): tre modelli di pagamento (quota mensile / pacchetto / carnet) da mantenere coerenti su `payments` e nei report — complessità concentrata in Fase 4.
+- **Atleti non collegati ad account**: l'area atleta richiede la migration di collegamento; se molti atleti sono minori, l'accesso è tutto sui tutori — regola per età da confermare.
+- **Migrazione `weight_categories` → `categories`**: le tabelle dello scaffold non hanno dati seed, ma la FK di `competition_results` va aggiornata con attenzione.
+- **Next.js 16 breaking changes**: seguire `node_modules/next/dist/docs/` (`AGENTS.md`). Alcune API già diverse (`params` async, `LayoutProps`).
+- **Provider email / gateway pagamenti non scelti**: notifiche email e pagamenti online restano stub.
+- **Job schedulati**: `refresh_monthly_fee_statuses` e alert scadenze richiedono uno scheduler (Supabase scheduled functions / Vercel Cron / GitHub Actions) — dipende dall'hosting.
+
+---
+
+## 12. DA DEFINIRE
+
+| Rif. | Decisione | Serve per |
+|---|---|---|
+| ✅ §2 | Modello dati: **Opzione A estesa** — *deciso 2026-09-09* | — |
+| ✅ C06 | Prenotazioni self-service: **no**, solo iscrizione ai gruppi — *deciso* | — |
+| C05 | Elenco **discipline** del centro e **categorie** per disciplina (età/peso/livello) | Fase 2.6 |
+| D41 / C07 | Valuta (EUR?) e metodi di pagamento reali (contanti/POS/bonifico/online) | Fase 4 |
+| C04 | Importi quote mensili, prezzi pacchetti a durata, tagli e prezzi carnet ingressi (dati, non codice) | Fase 4 |
+| — | Il carnet ingressi si decrementa sulla **presenza** o sulla **prenotazione/iscrizione**? Scadenza carnet? | Fase 4.3 |
+| FL06 | Giorni di preavviso per alert certificati / tesseramenti | Fase 5 |
+| §4 | Formato numero ricevuta (progressivo annuo? per struttura?) | Fase 4.6 |
+| I04 | Provider email (Resend / Postmark / SES / SMTP…) | Fase 7.1 |
+| I05 | Serve pagamento online? quale gateway | Fase 7 (opz.) |
+| Scheda 12 | Hosting (Vercel?), dominio, backup, monitoring, scheduler cron | Fase 8 |
+| C01 | Logo definitivo | rifinitura UI |
+| — | Atleti maggiorenni con login proprio? Tutore obbligatorio sotto quale età? | Fase 1.3 / 6.1 |
+| — | Ruoli di sistema globali (`organization_id = null`) o duplicati per organizzazione? | Fase 1.5 |
