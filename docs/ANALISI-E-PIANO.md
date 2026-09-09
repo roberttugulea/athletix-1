@@ -360,7 +360,8 @@ Codice completo (commit `397c478`…`a6e2bfe`), `pnpm lint` + `pnpm build` + `pn
 - ⏳ Push su GitHub: non ancora fatto (in attesa di conferma).
 
 ### Fase 2 — Anagrafiche & struttura sportiva
-- 2.1 Strutture, Spazi, Stagioni, **Discipline**. 2.2 Atleti (CRUD, ricerca, filtri, archivia, scheda) + collegamento account. 2.3 Tutori (minori). 2.4 Coach (CRUD + associazioni). 2.5 Gruppi ("corsi") + slot orari con gestione conflitti GiST + capienza. 2.6 Categorie generali (`kind`: età/peso/disciplina/livello) + migrazione dati `weight_categories`.
+- 2.1 ✅ *(commit `e72b899`)* Strutture, Spazi, Stagioni, **Discipline** — CRUD (list + `[id]` edit) sotto `/impostazioni`, permesso `facilities.manage`, kit riusabile `DataTable` / `EntityForm` / `Breadcrumb`. Migration `20260911090000` (tabella `disciplines` + `groups.discipline_id`). Verificato a runtime.
+- 2.2 ⏳ Atleti (CRUD, ricerca, filtri, archivia, scheda) + collegamento account. 2.3 Tutori (minori). 2.4 Coach (CRUD + associazioni). 2.5 Gruppi ("corsi") + slot orari con gestione conflitti GiST + capienza. 2.6 Categorie generali (`kind`: età/peso/disciplina/livello) + migrazione dati `weight_categories`.
 - Test per ogni entità (T04). Commit per incremento.
 
 ### Fase 3 — Calendario, iscrizioni, presenze
