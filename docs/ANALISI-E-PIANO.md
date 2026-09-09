@@ -342,19 +342,21 @@ CI: GitHub Actions su push/PR → lint + build + vitest (+ Playwright opzionale)
 Regola per ogni incremento: **piccolo e verificabile** → `pnpm lint` + `pnpm build` + test pertinenti → **commit chiaro** (push solo a progetto verificato e senza segreti).
 
 ### Fase 0 — Prerequisiti
-- 0.1 Installare Node LTS + pnpm@11.19.0 + Git sul PC. `pnpm install`. Verificare `pnpm lint` e `pnpm build` sullo scaffold.
-- 0.2 `.env.local` con le credenziali Supabase (già disponibili). Verifica connessione.
-- 0.3 Applicare la migration `20260904190000` al progetto Supabase (se non già applicata). Creare bucket privato `private-documents`.
-- 0.4 `supabase gen types typescript` → `src/types/database.types.ts`.
+- 0.1 ✅ *(2026-09-09)* Node 24.20.0 + pnpm 11.19.0 + Git 2.55 installati. `pnpm install` ok, `pnpm lint` pulito, `pnpm build` verde.
+- 0.2 ⏳ `.env.local` con le credenziali Supabase (l'utente lo compila da `.env.example`).
+- 0.3 ⏳ `pnpm supabase link` + `pnpm supabase db push` per applicare `20260904190000` e le 4 migration Fase 1. Creare bucket privato `private-documents`.
+- 0.4 ⏳ `pnpm db:types` → rigenera `src/types/database.types.ts` (ora parziale, scritto a mano).
 
 ### Fase 1 — Infrastruttura: auth + tenant + RBAC *(il cuore, come da "PRIORITÀ" scheda 13)*
-- 1.1 `@supabase/ssr`: client server/browser + `middleware.ts` (refresh sessione).
-- 1.2 `/login`, `/recupera-password`, `/reset-password`, `auth/callback`, logout.
-- 1.3 Migration `provision_organization()` + onboarding minimo (crea org, settings, ruoli di sistema, primo admin).
-- 1.4 Selettore organizzazione + risoluzione **org attiva server-side** + `assertPermission`.
-- 1.5 Migration RBAC (ruoli di sistema, funzioni self/coach) + **restrizione policy RLS** coach/atleta + policy lettura audit.
-- 1.6 Layout `(app)` con sidebar **per ruolo** (voci non autorizzate nascoste) + dashboard vuota per ruolo.
-- 1.7 Test: matrice RLS + login e2e. Commit + push.
+Codice completo (commit `397c478`…`11a918e`), `pnpm lint` + `pnpm build` + `pnpm test` verdi. **Non ancora verificato a runtime**: serve il collegamento a Supabase (Fase 0.2–0.4).
+- 1.1 ✅ `@supabase/ssr`: client server/browser + `src/proxy.ts` (in Next 16 `middleware`→`proxy`, runtime Node) che rinfresca la sessione.
+- 1.2 ✅ `/login`, `/recupera-password`, `/reset-password`, `/auth/callback`, logout — `useActionState` + zod.
+- 1.3 ✅ Migration `provision_organization()` + `/onboarding` (crea org, settings, 4 ruoli di sistema, primo admin).
+- 1.4 ✅ Cookie `athletix-org` validato server-side + `my_permissions` RPC + `assertPermission` / `requirePermission`.
+- 1.5 ✅ Migration: funzioni self/coach/guardian, riscrittura policy di scrittura per permesso, restrizione letture sensibili, lettura audit ai soli admin.
+- 1.6 ✅ Layout `(app)` con `AppShell` per ruolo (voci non autorizzate nascoste), selettore organizzazione, dashboard segnaposto, 13 stub di sezione con gate permesso.
+- 1.7 ◑ Unit test (permessi, schemi auth). Matrice RLS + login e2e: **da fare dopo il link Supabase**.
+- ⏳ Push su GitHub: dopo verifica runtime, come da regola scheda 13.
 
 ### Fase 2 — Anagrafiche & struttura sportiva
 - 2.1 Strutture, Spazi, Stagioni, **Discipline**. 2.2 Atleti (CRUD, ricerca, filtri, archivia, scheda) + collegamento account. 2.3 Tutori (minori). 2.4 Coach (CRUD + associazioni). 2.5 Gruppi ("corsi") + slot orari con gestione conflitti GiST + capienza. 2.6 Categorie generali (`kind`: età/peso/disciplina/livello) + migrazione dati `weight_categories`.
