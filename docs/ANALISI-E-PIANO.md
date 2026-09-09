@@ -341,22 +341,23 @@ CI: GitHub Actions su push/PR → lint + build + vitest (+ Playwright opzionale)
 
 Regola per ogni incremento: **piccolo e verificabile** → `pnpm lint` + `pnpm build` + test pertinenti → **commit chiaro** (push solo a progetto verificato e senza segreti).
 
-### Fase 0 — Prerequisiti
-- 0.1 ✅ *(2026-09-09)* Node 24.20.0 + pnpm 11.19.0 + Git 2.55 installati. `pnpm install` ok, `pnpm lint` pulito, `pnpm build` verde.
-- 0.2 ⏳ `.env.local` con le credenziali Supabase (l'utente lo compila da `.env.example`).
-- 0.3 ⏳ `pnpm supabase link` + `pnpm supabase db push` per applicare `20260904190000` e le 4 migration Fase 1. Creare bucket privato `private-documents`.
-- 0.4 ⏳ `pnpm db:types` → rigenera `src/types/database.types.ts` (ora parziale, scritto a mano).
+### Fase 0 — Prerequisiti ✅ *(2026-09-09)*
+- 0.1 ✅ Node 24.20.0 + pnpm 11.19.0 + Git 2.55. `pnpm install` / `lint` / `build` ok.
+- 0.2 ✅ `.env.local` compilato (chiavi `sb_publishable_` / `sb_secret_`).
+- 0.3 ✅ `supabase link` + `db push`: schema + 4 migration Fase 1 applicate sul progetto `imxoapuijojhvowcstmo`. Durante il push corretti **2 bug latenti** dello schema scaffold (`competition_results` senza `organization_id`; regex `CHECK` di `permissions.key` con `\\.`). *(bucket `private-documents`: rinviato alla Fase 5)*
+- 0.4 ✅ `pnpm db:types` → `src/types/database.types.ts` rigenerato dal progetto reale (2611 righe).
 
-### Fase 1 — Infrastruttura: auth + tenant + RBAC *(il cuore, come da "PRIORITÀ" scheda 13)*
-Codice completo (commit `397c478`…`11a918e`), `pnpm lint` + `pnpm build` + `pnpm test` verdi. **Non ancora verificato a runtime**: serve il collegamento a Supabase (Fase 0.2–0.4).
+### Fase 1 — Infrastruttura: auth + tenant + RBAC *(il cuore, come da "PRIORITÀ" scheda 13)* ✅
+Codice completo (commit `397c478`…`a6e2bfe`), `pnpm lint` + `pnpm build` + `pnpm test` verdi.
+**Verificato a runtime (2026-09-09):** login → (nessuna org) → `/onboarding` → `provision_organization` → `/dashboard` con sidebar completa per admin → navigazione a `/atleti` (gate permesso ok) → logout. Nessun errore in console. Corretto un bug UI (sidebar non scrollava sotto una certa altezza schermo).
 - 1.1 ✅ `@supabase/ssr`: client server/browser + `src/proxy.ts` (in Next 16 `middleware`→`proxy`, runtime Node) che rinfresca la sessione.
 - 1.2 ✅ `/login`, `/recupera-password`, `/reset-password`, `/auth/callback`, logout — `useActionState` + zod.
 - 1.3 ✅ Migration `provision_organization()` + `/onboarding` (crea org, settings, 4 ruoli di sistema, primo admin).
 - 1.4 ✅ Cookie `athletix-org` validato server-side + `my_permissions` RPC + `assertPermission` / `requirePermission`.
 - 1.5 ✅ Migration: funzioni self/coach/guardian, riscrittura policy di scrittura per permesso, restrizione letture sensibili, lettura audit ai soli admin.
 - 1.6 ✅ Layout `(app)` con `AppShell` per ruolo (voci non autorizzate nascoste), selettore organizzazione, dashboard segnaposto, 13 stub di sezione con gate permesso.
-- 1.7 ◑ Unit test (permessi, schemi auth). Matrice RLS + login e2e: **da fare dopo il link Supabase**.
-- ⏳ Push su GitHub: dopo verifica runtime, come da regola scheda 13.
+- 1.7 ◑ Unit test (permessi, schemi auth) verdi. Matrice RLS automatizzata + e2e Playwright: **rinviati** (necessitano un secondo utente con ruolo limitato e un test runner e2e — Fase 2/7).
+- ⏳ Push su GitHub: non ancora fatto (in attesa di conferma).
 
 ### Fase 2 — Anagrafiche & struttura sportiva
 - 2.1 Strutture, Spazi, Stagioni, **Discipline**. 2.2 Atleti (CRUD, ricerca, filtri, archivia, scheda) + collegamento account. 2.3 Tutori (minori). 2.4 Coach (CRUD + associazioni). 2.5 Gruppi ("corsi") + slot orari con gestione conflitti GiST + capienza. 2.6 Categorie generali (`kind`: età/peso/disciplina/livello) + migrazione dati `weight_categories`.
