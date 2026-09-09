@@ -369,9 +369,12 @@ Codice completo (commit `397c478`…`a6e2bfe`), `pnpm lint` + `pnpm build` + `pn
 - **Fase 2 completa.** Tutti gli incrementi verificati a runtime; commit + push per incremento.
 - ⚠️ Nota Turbopack: svuotare `.next/` quando si aggiungono route sotto un segmento che prima aveva solo `page.tsx` (il dev server con cache filesystem non le rileva; `pnpm build` non è affetto).
 
-### Fase 3 — Calendario, iscrizioni, presenze
-- 3.1 Generazione `training_sessions` dagli slot + calendario giorno/settimana/mese. 3.2 Iscrizione atleti ai gruppi (`athlete_groups`) con controllo capienza. 3.3 Presenze (registro, bulk, audit) + area coach base. 3.4 Prove gratuite (`trial_lessons`).
-- Test presenze + iscrizione.
+### Fase 3 — Calendario, iscrizioni, presenze ✅
+- 3.1 ✅ `48eb40b` — RPC `generate_sessions_for_group` (DST-aware, dedup); sezione "Sessioni" nella scheda gruppo; `/calendario` agenda settimanale con navigazione. Migration `20260912090000`.
+- 3.2 ✅ — Iscrizione atleti ai gruppi con capienza: già realizzata in 2.5.
+- 3.3 ✅ `48eb40b` — `/presenze` (lista sessioni ±2 settimane) e `/presenze/[id]` (registro Presente/Assente/Ritardo/Giustificato, salva → sessione "completed"). Migration `20260912100000` (policy RLS `attendances`: staff o coach del gruppo).
+- 3.4 ✅ `a42da47` — `/prove`: lezioni di prova per potenziali iscritti, con stato presentato/iscritto/annullata. Migration `20260912110000` (RPC `add_trial_lesson`).
+- **Fase 3 completa.** Tutto verificato a runtime.
 
 ### Fase 4 — Amministrazione economica (billing misto)
 - 4.1 Quote mensili: `fee_plans`, sconti, esoneri, generazione `monthly_fees` + job `refresh_monthly_fee_statuses` (cron). 4.2 Pacchetti a durata: `subscription_plans` + `subscriptions` (attiva/rinnova/annulla). 4.3 Carnet a ingressi: `pass_plans` + `athlete_passes` + decremento su presenza. 4.4 Pagamenti (aggancio quota\|pacchetto\|carnet, registra → immutabile, void con motivo). 4.5 Rimborsi. 4.6 Ricevute *(formato numero DA DEFINIRE)*.
