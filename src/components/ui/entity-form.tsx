@@ -95,6 +95,7 @@ export function EntityForm({
                       type={f.type ?? "text"}
                       required={f.required}
                       placeholder={f.placeholder}
+                      step={f.type === "number" ? "any" : undefined}
                       defaultValue={def == null ? "" : String(def)}
                       className="w-full rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--blue)]"
                     />

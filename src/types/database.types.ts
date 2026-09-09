@@ -1900,6 +1900,7 @@ export type Database = {
           paid_on: string
           recorded_by: string | null
           status: string
+          subscription_id: string | null
           void_reason: string | null
         }
         Insert: {
@@ -1914,6 +1915,7 @@ export type Database = {
           paid_on: string
           recorded_by?: string | null
           status?: string
+          subscription_id?: string | null
           void_reason?: string | null
         }
         Update: {
@@ -1928,6 +1930,7 @@ export type Database = {
           paid_on?: string
           recorded_by?: string | null
           status?: string
+          subscription_id?: string | null
           void_reason?: string | null
         }
         Relationships: [
@@ -1957,6 +1960,13 @@ export type Database = {
             columns: ["recorded_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
             referencedColumns: ["id"]
           },
         ]
@@ -2098,6 +2108,32 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      receipt_counters: {
+        Row: {
+          last_number: number
+          organization_id: string
+          year: number
+        }
+        Insert: {
+          last_number?: number
+          organization_id: string
+          year: number
+        }
+        Update: {
+          last_number?: number
+          organization_id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipt_counters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       receipts: {
         Row: {
@@ -2665,12 +2701,35 @@ export type Database = {
       is_coach_of_group: { Args: { p_group: string }; Returns: boolean }
       is_guardian_of: { Args: { p_athlete: string }; Returns: boolean }
       is_organization_member: { Args: { p_org: string }; Returns: boolean }
+      issue_receipt: { Args: { p_payment: string }; Returns: string }
       my_permissions: { Args: { p_org: string }; Returns: string[] }
       provision_organization: {
         Args: {
           p_admin_first_name: string
           p_admin_last_name: string
           p_name: string
+        }
+        Returns: string
+      }
+      record_payment: {
+        Args: {
+          p_amount: number
+          p_athlete: string
+          p_external_ref: string
+          p_issue_receipt: boolean
+          p_method: string
+          p_monthly_fee: string
+          p_paid_on: string
+          p_subscription: string
+        }
+        Returns: string
+      }
+      record_refund: {
+        Args: {
+          p_amount: number
+          p_payment: string
+          p_reason: string
+          p_refunded_on: string
         }
         Returns: string
       }

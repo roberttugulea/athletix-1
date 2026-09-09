@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { DataTable } from "@/components/ui/data-table";
 import { Breadcrumb, PageHeader } from "@/components/ui/page-header";
 import { requirePermission } from "@/lib/auth/guards";
@@ -142,6 +144,19 @@ export default async function QuoteMensiliPage(props: {
             key: "status",
             label: "Stato",
             render: (r) => FEE_STATUS_LABEL[r.status] ?? r.status,
+          },
+          {
+            key: "pay",
+            label: "",
+            render: (r) =>
+              r.status === "paid" || r.status === "exempt" ? null : (
+                <Link
+                  href={`/pagamenti/nuovo?fee=${r.id}`}
+                  className="text-xs font-semibold text-[var(--blue)]"
+                >
+                  Registra pagamento
+                </Link>
+              ),
           },
         ]}
         rows={rows}

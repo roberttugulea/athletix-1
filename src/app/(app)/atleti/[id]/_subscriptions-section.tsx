@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { EntityForm } from "@/components/ui/entity-form";
 import type { FieldConfig } from "@/components/ui/entity-form";
 import { todayISO } from "@/lib/format";
@@ -84,18 +86,26 @@ export async function SubscriptionsSection({
                     {SUBSCRIPTION_STATUS_LABEL[s.status] ?? s.status}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {s.status === "active" ? (
-                      <form
-                        action={cancelSubscription.bind(null, s.id, athleteId)}
+                    <div className="flex justify-end gap-3">
+                      <Link
+                        href={`/pagamenti/nuovo?sub=${s.id}`}
+                        className="text-xs font-semibold text-[var(--blue)]"
                       >
-                        <button
-                          type="submit"
-                          className="text-xs font-semibold text-red-600"
+                        Pagamento
+                      </Link>
+                      {s.status === "active" ? (
+                        <form
+                          action={cancelSubscription.bind(null, s.id, athleteId)}
                         >
-                          Annulla
-                        </button>
-                      </form>
-                    ) : null}
+                          <button
+                            type="submit"
+                            className="text-xs font-semibold text-red-600"
+                          >
+                            Annulla
+                          </button>
+                        </form>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               ))}
