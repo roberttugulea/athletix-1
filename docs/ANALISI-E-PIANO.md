@@ -360,9 +360,12 @@ Codice completo (commit `397c478`…`a6e2bfe`), `pnpm lint` + `pnpm build` + `pn
 - ⏳ Push su GitHub: non ancora fatto (in attesa di conferma).
 
 ### Fase 2 — Anagrafiche & struttura sportiva
-- 2.1 ✅ *(commit `e72b899`)* Strutture, Spazi, Stagioni, **Discipline** — CRUD (list + `[id]` edit) sotto `/impostazioni`, permesso `facilities.manage`, kit riusabile `DataTable` / `EntityForm` / `Breadcrumb`. Migration `20260911090000` (tabella `disciplines` + `groups.discipline_id`). Verificato a runtime.
-- 2.2 ⏳ Atleti (CRUD, ricerca, filtri, archivia, scheda) + collegamento account. 2.3 Tutori (minori). 2.4 Coach (CRUD + associazioni). 2.5 Gruppi ("corsi") + slot orari con gestione conflitti GiST + capienza. 2.6 Categorie generali (`kind`: età/peso/disciplina/livello) + migrazione dati `weight_categories`.
-- Test per ogni entità (T04). Commit per incremento.
+- 2.1 ✅ `e72b899` — Strutture, Spazi, Stagioni, **Discipline**. CRUD (list + `[id]`) sotto `/impostazioni`, permesso `facilities.manage`. Kit riusabile `DataTable` / `EntityForm` / `Breadcrumb`. Migration `20260911090000` (`disciplines` + `groups.discipline_id`).
+- 2.2 ✅ `42823f2` — Atleti: list con ricerca + filtro stato (form GET, zero JS), `/atleti/nuovo`, `/atleti/[id]` scheda (modifica + archivia/ripristina). Helper condivisi `src/server/actions/_helpers.ts`. `ListToolbar`.
+- 2.3 ✅ `77427de` — Tutori nella scheda atleta: aggiunta/rimozione, referente unico, limite 2 (trigger). Migration `20260911120000` (policy RLS `athlete_guardians`).
+- 2.4 ✅ `3aea19d` — Coach: CRUD speculare agli atleti; qualifiche come lista separata da virgola.
+- 2.5 ⏳ Gruppi ("corsi") + `group_schedule_slots` (vincolo GiST anti-overlap: gestire errore 23P01) + capienza + assegnazione coach/atleti. 2.6 Categorie generali (`kind`) + migrazione dati `weight_categories` + FK `competition_results`.
+- Tutti gli incrementi 2.1–2.4 verificati a runtime. Commit + push per incremento.
 
 ### Fase 3 — Calendario, iscrizioni, presenze
 - 3.1 Generazione `training_sessions` dagli slot + calendario giorno/settimana/mese. 3.2 Iscrizione atleti ai gruppi (`athlete_groups`) con controllo capienza. 3.3 Presenze (registro, bulk, audit) + area coach base. 3.4 Prove gratuite (`trial_lessons`).
