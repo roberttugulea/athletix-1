@@ -21,6 +21,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Gruppi", href: "/gruppi", symbol: "◉", permission: "groups.manage" },
       { label: "Calendario", href: "/calendario", symbol: "▤", permission: "attendance.manage" },
       { label: "Presenze", href: "/presenze", symbol: "✓", permission: "attendance.manage" },
+      { label: "Prove gratuite", href: "/prove", symbol: "✦", permission: "people.manage" },
       { label: "Abbonamenti", href: "/abbonamenti", symbol: "▭", permission: "finance.manage" },
       { label: "Pagamenti", href: "/pagamenti", symbol: "€", permission: "finance.manage" },
       { label: "Tesseramenti", href: "/tesseramenti", symbol: "▦", permission: "people.manage" },

@@ -2516,6 +2516,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_trial_lesson: {
+        Args: {
+          p_contact_email: string
+          p_contact_name: string
+          p_contact_phone: string
+          p_facility: string
+          p_group: string
+          p_local_datetime: string
+          p_notes: string
+        }
+        Returns: string
+      }
       calculate_prorated_fee: {
         Args: { p_amount: number; p_joined_on: string; p_period: string }
         Returns: number

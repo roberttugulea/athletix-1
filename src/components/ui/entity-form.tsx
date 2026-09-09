@@ -14,6 +14,7 @@ export type FieldConfig = {
     | "tel"
     | "date"
     | "time"
+    | "datetime-local"
     | "number"
     | "select"
     | "checkbox"
