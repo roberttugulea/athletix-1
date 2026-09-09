@@ -10,6 +10,7 @@ import {
   updateAthlete,
 } from "@/server/actions/athletes";
 import { athleteFields } from "../_fields";
+import { GuardiansSection } from "./_guardians-section";
 
 export const metadata = { title: "Scheda atleta | ATHLETIX" };
 
@@ -75,6 +76,8 @@ export default async function AtletaDetailPage(props: {
         hidden={{ id: row.id }}
         submitLabel="Salva modifiche"
       />
+
+      <GuardiansSection athleteId={row.id} />
 
       <p className="mt-6 text-xs text-[var(--muted)]">
         Gruppi, abbonamenti, certificati e tesseramenti dell&apos;atleta
