@@ -377,7 +377,13 @@ Codice completo (commit `397c478`…`a6e2bfe`), `pnpm lint` + `pnpm build` + `pn
 - **Fase 3 completa.** Tutto verificato a runtime.
 
 ### Fase 4 — Amministrazione economica (billing misto)
-- 4.1 Quote mensili: `fee_plans`, sconti, esoneri, generazione `monthly_fees` + job `refresh_monthly_fee_statuses` (cron). 4.2 Pacchetti a durata: `subscription_plans` + `subscriptions` (attiva/rinnova/annulla). 4.3 Carnet a ingressi: `pass_plans` + `athlete_passes` + decremento su presenza. 4.4 Pagamenti (aggancio quota\|pacchetto\|carnet, registra → immutabile, void con motivo). 4.5 Rimborsi. 4.6 Ricevute *(formato numero DA DEFINIRE)*.
+Decisioni committente: quota **mensile** + **pacchetti a durata (3 e 9 mesi)**; **niente carnet a ingressi**; tutti i metodi di pagamento (contanti/POS/bonifico/online, esito online registrato a mano per ora); ricevute a **progressivo annuo** (`n/AAAA`); valuta **EUR**.
+- 4.1 ✅ `2e8eba0` — Quote mensili: `fee_plans` CRUD, RPC `generate_monthly_fees` (rateo + esoneri), `/abbonamenti/quote` con filtri/totali/aggiorna-stati. Migration `20260913090000`.
+- 4.2 ⏳ Pacchetti a durata: tabelle nuove `subscription_plans` + `subscriptions` (attiva su atleta, `ends_on` = inizio + durata, prezzo congelato).
+- 4.3 ~~Carnet a ingressi~~ — escluso dal committente.
+- 4.4 ⏳ Pagamenti: `payments` esistente (con trigger di immutabilità → nessun update/delete; l'annullamento è un rimborso). Aggiungere `payments.subscription_id`. Registra pagamento contro una quota o un abbonamento.
+- 4.5 ⏳ Rimborsi (`refunds`, totale o parziale; il pagamento originale resta).
+- 4.6 ⏳ Ricevute: contatore per organizzazione+anno, numero `n/AAAA`.
 - Test T06, T07.
 
 ### Fase 5 — Documenti & scadenze
