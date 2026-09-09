@@ -8,6 +8,7 @@ import { updateGroup } from "@/server/actions/groups";
 import { groupFields } from "../_fields";
 import { AthletesSection } from "./_athletes-section";
 import { CoachesSection } from "./_coaches-section";
+import { SessionsSection } from "./_sessions-section";
 import { SlotsSection } from "./_slots-section";
 
 export const metadata = { title: "Gruppo | ATHLETIX" };
@@ -68,6 +69,7 @@ export default async function GruppoDetailPage(props: {
       />
 
       <SlotsSection groupId={row.id} facilityId={row.facility_id} />
+      <SessionsSection groupId={row.id} />
       <CoachesSection groupId={row.id} />
       <AthletesSection groupId={row.id} capacity={row.capacity} />
     </div>
