@@ -404,8 +404,13 @@ Decisione committente (2026-09-10): **atleti maggiorenni → login proprio; mino
   - Migration `20260914120000_portal_read_access.sql`: estende le letture RLS di `organizations` / `groups` / `training_sessions` / `attendances` a atleta-self e tutore (prima erano solo `is_organization_member`).
   - Verificato a runtime: grant per Mario Rossi (21 anni) → password provvisoria → login come atleta → redirect `/area` → scheda con tutti i dati reali via RLS; `/dashboard` e `/atleti` reindirizzano l'atleta su `/area`; id atleta non proprio → 404; cambio password dal portale ok.
   - **Rinviato (non erano parte di 6.1):** comunicazioni ricevute nell'area → **Fase 7.1/7.2** (manca il modulo comunicazioni); stato accesso / invito nella scheda coach → **Fase 7.5** (i coach accedono come `organization_members` con ruolo Coach, quindi è gestione utenti/ruoli, non `coaches.profile_id`); azioni self di modifica dati → **fuori scope** (nessun self-service oltre alla consultazione, da decisione committente).
-- 6.2 Area coach completa (gruppi/atleti/sessioni/presenze/schede propri) — usa l'app `(app)` con nav ridotta (permesso `attendance.manage`), non un portale separato.
-- 6.3 Schede allenamento (`workout_plans`).
+- 6.2 ✅ **Area coach** (usa l'app `(app)` con nav ridotta, permesso `attendance.manage`, non un portale separato).
+  - `src/lib/auth/coach.ts` `getCoachContext(orgId)` → `{isCoach, coachId, groupIds}` (riga `coaches` collegata alla membership + `coach_groups` non scaduti).
+  - `/coach/area` — "I miei gruppi" (nome, stagione, n. atleti, prossima sessione); `/coach/gruppo/[id]` — roster + sessioni ±(7/21)g con link a `/presenze/[id]`; guard `groupIds.includes(id) || groups.manage`.
+  - `/calendario` e `/presenze`: se l'utente è coach **e non** ha `groups.manage`, le query `training_sessions` sono filtrate su `groupIds` e i link al gruppo puntano a `/coach/gruppo/[id]` invece che a `/gruppi/[id]`. `/presenze/[id]` nega (404) le sessioni fuori dai propri gruppi.
+  - Voce nav "Area coach" (`attendance.manage`); per staff non-coach mostra un avviso "non sei collegato a un'anagrafica coach".
+  - Verificato a runtime con utente coach di test (`coach.test@athletix.local`, membership + ruolo Coach + `coaches.organization_member_id` + `coach_groups` → Judo Ragazzi): nav ridotta (Dashboard/Calendario/Presenze/Area coach); `/coach/area` e `/coach/gruppo` mostrano solo il suo gruppo; salvataggio presenze ok (RLS `is_coach_of_group`); `/atleti` `/gruppi` `/abbonamenti` → redirect denied; gruppo altrui → 404; l'admin continua a vedere tutto con link a `/gruppi/[id]`.
+- 6.3 Schede allenamento (`workout_plans`) — da fare.
 - Test T09, T10.
 
 ### Fase 7 — Comunicazione, gare, report, utenti

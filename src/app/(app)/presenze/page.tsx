@@ -1,9 +1,13 @@
 import Link from "next/link";
 
 import { PageHeader } from "@/components/ui/page-header";
+import { getCoachContext } from "@/lib/auth/coach";
 import { requirePermission } from "@/lib/auth/guards";
+import { hasPermission } from "@/lib/auth/permissions";
 import { addDays, formatShortDate, formatTime, todayISO } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+
+const NO_MATCH = "00000000-0000-0000-0000-000000000000";
 
 export const metadata = { title: "Presenze | ATHLETIX" };
 
@@ -26,13 +30,24 @@ export default async function PresenzeListPage() {
   const org = await requirePermission("attendance.manage");
   const supabase = await createClient();
 
-  const { data } = await supabase
+  const coach = await getCoachContext(org.organizationId);
+  const scopeToCoach =
+    coach.isCoach &&
+    !(await hasPermission(org.organizationId, "groups.manage"));
+  const groupHref = (gid: string) =>
+    scopeToCoach ? `/coach/gruppo/${gid}` : `/gruppi/${gid}`;
+
+  let query = supabase
     .from("training_sessions")
     .select("id, starts_at, ends_at, status, group_id, groups(name)")
     .eq("organization_id", org.organizationId)
     .gte("starts_at", `${addDays(todayISO(), -14)}T00:00:00`)
     .lt("starts_at", `${addDays(todayISO(), 14)}T00:00:00`)
     .order("starts_at");
+  if (scopeToCoach) {
+    query = query.in("group_id", coach.groupIds.length ? coach.groupIds : [NO_MATCH]);
+  }
+  const { data } = await query;
 
   const rows = (data ?? []) as unknown as Row[];
 
@@ -70,7 +85,7 @@ export default async function PresenzeListPage() {
                   </td>
                   <td className="px-4 py-3">
                     <Link
-                      href={`/gruppi/${s.group_id}`}
+                      href={groupHref(s.group_id)}
                       className="text-[var(--blue)]"
                     >
                       {s.groups?.name ?? "Gruppo"}

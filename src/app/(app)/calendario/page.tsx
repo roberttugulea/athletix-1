@@ -1,7 +1,9 @@
 import Link from "next/link";
 
 import { PageHeader } from "@/components/ui/page-header";
+import { getCoachContext } from "@/lib/auth/coach";
 import { requirePermission } from "@/lib/auth/guards";
+import { hasPermission } from "@/lib/auth/permissions";
 import {
   addDays,
   dayKey,
@@ -11,6 +13,8 @@ import {
   todayISO,
 } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+
+const NO_MATCH = "00000000-0000-0000-0000-000000000000";
 
 export const metadata = { title: "Calendario | ATHLETIX" };
 
@@ -42,7 +46,14 @@ export default async function CalendarioPage(props: {
   const rangeStart = `${monday}T00:00:00`;
   const rangeEnd = `${addDays(monday, 7)}T00:00:00`;
 
-  const { data } = await supabase
+  const coach = await getCoachContext(org.organizationId);
+  const scopeToCoach =
+    coach.isCoach &&
+    !(await hasPermission(org.organizationId, "groups.manage"));
+  const groupHref = (gid: string) =>
+    scopeToCoach ? `/coach/gruppo/${gid}` : `/gruppi/${gid}`;
+
+  let query = supabase
     .from("training_sessions")
     .select(
       "id, starts_at, ends_at, status, group_id, groups(name), spaces(name)",
@@ -51,6 +62,10 @@ export default async function CalendarioPage(props: {
     .gte("starts_at", rangeStart)
     .lt("starts_at", rangeEnd)
     .order("starts_at");
+  if (scopeToCoach) {
+    query = query.in("group_id", coach.groupIds.length ? coach.groupIds : [NO_MATCH]);
+  }
+  const { data } = await query;
 
   const rows = (data ?? []) as unknown as SessionRow[];
   const byDay = new Map<string, SessionRow[]>();
@@ -116,7 +131,7 @@ export default async function CalendarioPage(props: {
                         {formatTime(s.starts_at)}–{formatTime(s.ends_at)}
                       </span>
                       <Link
-                        href={`/gruppi/${s.group_id}`}
+                        href={groupHref(s.group_id)}
                         className="text-[var(--blue)]"
                       >
                         {s.groups?.name ?? "Gruppo"}

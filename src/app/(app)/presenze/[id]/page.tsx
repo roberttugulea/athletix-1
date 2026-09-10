@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 
 import { Breadcrumb, PageHeader } from "@/components/ui/page-header";
+import { getCoachContext } from "@/lib/auth/coach";
 import { requirePermission } from "@/lib/auth/guards";
+import { hasPermission } from "@/lib/auth/permissions";
 import { formatShortDate, formatTime } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import type { AttendanceStatus } from "@/lib/validation/attendance";
@@ -29,6 +31,19 @@ export default async function PresenzeSessionPage(props: {
     .maybeSingle();
 
   if (!session) notFound();
+
+  // Il coach "puro" accede solo alle sessioni dei propri gruppi.
+  const canManageGroups = await hasPermission(
+    org.organizationId,
+    "groups.manage",
+  );
+  if (!canManageGroups) {
+    const coach = await getCoachContext(org.organizationId);
+    if (coach.isCoach && !coach.groupIds.includes(session.group_id)) {
+      notFound();
+    }
+  }
+
   const group = session.groups as { name: string } | null;
   const space = session.spaces as { name: string } | null;
 
