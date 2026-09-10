@@ -10,6 +10,7 @@ import {
   updateAthlete,
 } from "@/server/actions/athletes";
 import { athleteFields } from "../_fields";
+import { AccessSection } from "./_access-section";
 import { CategoriesSection } from "./_categories-section";
 import { DocumentsSection } from "./_documents-section";
 import { GuardiansSection } from "./_guardians-section";
@@ -81,6 +82,12 @@ export default async function AtletaDetailPage(props: {
       />
 
       <GuardiansSection athleteId={row.id} />
+      <AccessSection
+        athleteId={row.id}
+        email={row.email}
+        birthDate={row.birth_date}
+        linked={Boolean(row.profile_id)}
+      />
       <CategoriesSection
         athleteId={row.id}
         organizationId={org.organizationId}

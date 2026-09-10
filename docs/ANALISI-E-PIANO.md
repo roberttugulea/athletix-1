@@ -396,7 +396,15 @@ Migration `20260914090000_documents_storage_and_alerts.sql`. Tutto verificato a 
 - Feed notifiche in-app (pagina `/notifiche` + widget dashboard): rinviato alla **Fase 7.2** come da piano.
 
 ### Fase 6 — Aree self-service
-- 6.1 Area atleta/tutore (profilo, quote, certificati, tessera, calendario/prenotazioni propri, comunicazioni). 6.2 Area coach completa. 6.3 Schede allenamento (`workout_plans`).
+Decisione committente (2026-09-10): **atleti maggiorenni → login proprio; minori di 18 → accesso solo tramite un tutore.**
+- 6.1 ◑ **Area atleta/tutore** — *in corso*.
+  - Provisioning account (`src/server/actions/access.ts`): da scheda atleta/tutore, `grantAthleteAccess` / `grantGuardianAccess` (permesso `people.manage`) creano/riusano l'utente auth via **client di servizio** (`src/lib/supabase/admin.ts`, chiave `SUPABASE_SERVICE_ROLE_KEY`, bypassa RLS) + riga `profiles`, poi collegano `athletes.profile_id` / `guardians.profile_id`. Password provvisoria mostrata **una sola volta** nel messaggio del form (nessun provider email: si comunica a voce/altro; l'utente la cambia da «Password dimenticata»). `grantAthleteAccess` blocca i minorenni. `revoke*` azzerano `profile_id`.
+  - Routing: `src/lib/auth/portal.ts` `getPortalIdentity()` (atleti self + minori in tutela). `(app)/layout` e `/onboarding` ora deviano i non-staff su `/area`. Nuovo route group `(portal)` con shell leggera.
+  - Pagine: `/area` (elenco persone) e `/area/atleta/[id]` (sola lettura: anagrafica, gruppi, prossimi allenamenti, quote, pagamenti, certificati, tesseramenti — con badge scadenze).
+  - Migration `20260914120000_portal_read_access.sql`: estende le letture RLS di `organizations` / `groups` / `training_sessions` / `attendances` a atleta-self e tutore (prima erano solo `is_organization_member`).
+  - Verificato a runtime: grant per Mario Rossi (21 anni) → password provvisoria → login come atleta → redirect `/area` → scheda con tutti i dati reali via RLS; `/dashboard` e `/atleti` reindirizzano l'atleta su `/area`; id atleta non proprio → 404.
+  - **Ancora da fare in 6.1**: comunicazioni ricevute nell'area; azioni self (es. richiesta modifica dati) se previste; link "Area personale" e stato accesso anche nella scheda coach.
+- 6.2 Area coach completa (gruppi/atleti/sessioni/presenze/schede propri). 6.3 Schede allenamento (`workout_plans`).
 - Test T09, T10.
 
 ### Fase 7 — Comunicazione, gare, report, utenti
@@ -437,5 +445,5 @@ Checklist scheda 12: build + lint puliti; tutte le migration applicate; matrice 
 | I05 | Serve pagamento online? quale gateway | Fase 7 (opz.) |
 | Scheda 12 | Hosting (Vercel?), dominio, backup, monitoring, scheduler cron | Fase 8 |
 | C01 | Logo definitivo | rifinitura UI |
-| — | Atleti maggiorenni con login proprio? Tutore obbligatorio sotto quale età? | Fase 1.3 / 6.1 |
+| ✅ — | Atleti maggiorenni: **login proprio**. Minori di 18: **accesso solo via tutore**. — *deciso 2026-09-10* | — |
 | — | Ruoli di sistema globali (`organization_id = null`) o duplicati per organizzazione? | Fase 1.5 |

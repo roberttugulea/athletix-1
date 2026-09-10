@@ -18,3 +18,18 @@ export function supabaseEnv(): { url: string; anonKey: string } {
     anonKey: NEXT_PUBLIC_SUPABASE_ANON_KEY,
   };
 }
+
+/**
+ * Chiave di servizio (solo server): usata per provisioning degli account
+ * atleta/tutore. Non deve mai raggiungere il browser.
+ */
+export function supabaseServiceEnv(): { url: string; serviceKey: string } {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!NEXT_PUBLIC_SUPABASE_URL || !serviceKey) {
+    throw new Error(
+      "Configurazione Supabase incompleta: imposta NEXT_PUBLIC_SUPABASE_URL e " +
+        "SUPABASE_SERVICE_ROLE_KEY in .env.local.",
+    );
+  }
+  return { url: NEXT_PUBLIC_SUPABASE_URL, serviceKey };
+}

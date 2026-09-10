@@ -1,5 +1,9 @@
 import { EntityForm } from "@/components/ui/entity-form";
 import { createClient } from "@/lib/supabase/server";
+import {
+  grantGuardianAccess,
+  revokeGuardianAccess,
+} from "@/server/actions/access";
 import { addGuardian, removeGuardian } from "@/server/actions/guardians";
 import { guardianFields } from "../_fields";
 
@@ -12,6 +16,7 @@ type GuardianRow = {
     last_name: string;
     email: string | null;
     phone: string | null;
+    profile_id: string | null;
   } | null;
 };
 
@@ -20,7 +25,7 @@ export async function GuardiansSection({ athleteId }: { athleteId: string }) {
   const { data } = await supabase
     .from("athlete_guardians")
     .select(
-      "guardian_id, relationship, is_primary, guardians(first_name, last_name, email, phone)",
+      "guardian_id, relationship, is_primary, guardians(first_name, last_name, email, phone, profile_id)",
     )
     .eq("athlete_id", athleteId);
 
@@ -48,6 +53,11 @@ export async function GuardiansSection({ athleteId }: { athleteId: string }) {
                         REFERENTE
                       </span>
                     ) : null}
+                    {r.guardians?.profile_id ? (
+                      <span className="ml-2 rounded bg-[#e7f6ec] px-2 py-0.5 text-[10px] font-bold text-[#1f7a3d]">
+                        ACCESSO ATTIVO
+                      </span>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3 text-[var(--muted)]">
                     {r.relationship}
@@ -56,20 +66,38 @@ export async function GuardiansSection({ athleteId }: { athleteId: string }) {
                     {r.guardians?.email ?? r.guardians?.phone ?? "—"}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <form
-                      action={removeGuardian.bind(
-                        null,
-                        athleteId,
-                        r.guardian_id,
-                      )}
-                    >
-                      <button
-                        type="submit"
-                        className="text-xs font-semibold text-red-600"
+                    <div className="flex justify-end gap-3">
+                      {r.guardians?.profile_id ? (
+                        <form
+                          action={revokeGuardianAccess.bind(
+                            null,
+                            r.guardian_id,
+                            athleteId,
+                          )}
+                        >
+                          <button
+                            type="submit"
+                            className="text-xs font-semibold text-[#8a5a12]"
+                          >
+                            Revoca accesso
+                          </button>
+                        </form>
+                      ) : null}
+                      <form
+                        action={removeGuardian.bind(
+                          null,
+                          athleteId,
+                          r.guardian_id,
+                        )}
                       >
-                        Rimuovi
-                      </button>
-                    </form>
+                        <button
+                          type="submit"
+                          className="text-xs font-semibold text-red-600"
+                        >
+                          Rimuovi
+                        </button>
+                      </form>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -82,6 +110,46 @@ export async function GuardiansSection({ athleteId }: { athleteId: string }) {
           uno (massimo due).
         </p>
       )}
+
+      {rows.some((r) => r.guardians && !r.guardians.profile_id) ? (
+        <div className="mb-4">
+          <h3 className="mb-2 text-xs font-bold text-[var(--muted)]">
+            Abilita l&apos;accesso all&apos;area personale
+          </h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {rows
+              .filter((r) => r.guardians && !r.guardians.profile_id)
+              .map((r) => (
+                <div key={r.guardian_id} className="panel p-4">
+                  <p className="mb-2 text-sm font-semibold">
+                    {r.guardians?.last_name} {r.guardians?.first_name}
+                  </p>
+                  {r.guardians?.email ? (
+                    <>
+                      <p className="mb-3 text-[11px] text-[var(--muted)]">
+                        Credenziali per {r.guardians.email}
+                      </p>
+                      <EntityForm
+                        action={grantGuardianAccess}
+                        fields={[]}
+                        hidden={{
+                          guardian_id: r.guardian_id,
+                          athlete_id: athleteId,
+                        }}
+                        submitLabel="Crea accesso"
+                      />
+                    </>
+                  ) : (
+                    <p className="text-[11px] text-[var(--muted)]">
+                      Aggiungi un&apos;email a questo tutore per abilitare
+                      l&apos;accesso.
+                    </p>
+                  )}
+                </div>
+              ))}
+          </div>
+        </div>
+      ) : null}
 
       {rows.length < 2 ? (
         <EntityForm

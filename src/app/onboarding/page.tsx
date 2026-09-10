@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { getPortalIdentity } from "@/lib/auth/portal";
 import { getActiveOrg, requireUser } from "@/lib/auth/session";
 import { OnboardingForm } from "./onboarding-form";
 
@@ -9,6 +10,7 @@ export default async function OnboardingPage() {
   const user = await requireUser();
   const org = await getActiveOrg();
   if (org) redirect("/dashboard");
+  if ((await getPortalIdentity()).isPortalUser) redirect("/area");
 
   return (
     <div className="grid min-h-screen place-items-center bg-[var(--canvas)] p-4">
