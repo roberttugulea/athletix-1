@@ -416,7 +416,15 @@ Decisione committente (2026-09-10): **atleti maggiorenni → login proprio; mino
 - Test T09, T10: coperti da verifica manuale; da automatizzare.
 
 ### Fase 7 — Comunicazione, gare, report, utenti
-- 7.1 Comunicazioni (draft/schedule/send) + destinatari (+ email provider **DA DEFINIRE**). 7.2 Feed notifiche in-app. 7.3 Gare + convocazioni + risultati + eventi. 7.4 Report/KPI + export CSV/Excel. 7.5 Gestione utenti e ruoli (invito, disattiva, assegna ruolo, protezione ultimo admin). 7.6 Ricerca globale. 7.7 Viewer audit log. Import controllato.
+Committente (2026-09-10): "può partire tutto"; email provider = **Resend** (I04).
+Ordine di lavoro adottato: **7.5 → 7.1 → 7.2 → 7.3 → 7.4 → 7.6 → 7.7** (utenti/ruoli prima perché fondamento di comunicazioni e test).
+- 7.5 ✅ Gestione utenti e ruoli. Migration `20260914170000_user_management.sql`: RPC `list_org_members` (supera `profiles_self`), `add_org_member`, `set_member_roles`, `set_member_status` (SECURITY DEFINER, guard `organization.manage`), `org_admin_count`/`member_is_admin` per la **protezione ultimo amministratore attivo** (nessuna azione può togliere/sospendere l'unico admin). `src/server/actions/members.ts` (`inviteMember` usa `createAdminClient` + `ensureAccount` estratto in `src/lib/auth/provision.ts`, poi `add_org_member`; password provvisoria mostrata una volta). Pagina `/impostazioni/utenti` (elenco con ruoli/stato, `<details>` modifica ruoli, sospendi/riattiva; l'unico admin mostra "Unico amministratore" senza pulsante). Verificato a runtime: invito, cambio ruoli, guard ultimo admin, sospendi/riattiva non-admin.
+- `src/lib/email/index.ts` — `sendEmail()` via Resend (fetch a `api.resend.com`), no-op se `RESEND_API_KEY`/`EMAIL_FROM` mancano. `.env.example` aggiornato.
+- 7.1 Comunicazioni (draft/schedule/send) + destinatari + invio email via `src/lib/email/` (Resend).
+- 7.2 Feed notifiche in-app (`/notifiche`; tabella `notifications` già creata in Fase 5).
+- 7.3 Gare + convocazioni + risultati + eventi.
+- 7.4 Report/KPI + export CSV.
+- 7.6 Ricerca globale. 7.7 Viewer audit log. Import controllato.
 - Test T12 (build), coerenza report.
 
 ### Fase 8 — Lancio
@@ -449,7 +457,7 @@ Checklist scheda 12: build + lint puliti; tutte le migration applicate; matrice 
 | — | Il carnet ingressi si decrementa sulla **presenza** o sulla **prenotazione/iscrizione**? Scadenza carnet? | Fase 4.3 |
 | ✅ FL06 | Giorni di preavviso alert certificati / tesseramenti: **configurabile per organizzazione, default 30** (`/impostazioni/organizzazione`) — *deciso Fase 5* | — |
 | §4 | Formato numero ricevuta (progressivo annuo? per struttura?) | Fase 4.6 |
-| I04 | Provider email (Resend / Postmark / SES / SMTP…) | Fase 7.1 |
+| ✅ I04 | Provider email: **Resend** (il più semplice) — *deciso 2026-09-10*. Astrazione `src/lib/email/` attiva solo se `RESEND_API_KEY` + `EMAIL_FROM` sono in `.env.local`, altrimenti gli invii sono registrati senza spedizione. | Fase 7.1 |
 | I05 | Serve pagamento online? quale gateway | Fase 7 (opz.) |
 | Scheda 12 | Hosting (Vercel?), dominio, backup, monitoring, scheduler cron | Fase 8 |
 | C01 | Logo definitivo | rifinitura UI |

@@ -2844,6 +2844,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_org_member: {
+        Args: { p_org: string; p_profile: string; p_role_ids: string[] }
+        Returns: string
+      }
       add_trial_lesson: {
         Args: {
           p_contact_email: string
@@ -2882,8 +2886,23 @@ export type Database = {
       is_guardian_of: { Args: { p_athlete: string }; Returns: boolean }
       is_organization_member: { Args: { p_org: string }; Returns: boolean }
       issue_receipt: { Args: { p_payment: string }; Returns: string }
+      list_org_members: {
+        Args: { p_org: string }
+        Returns: {
+          email: string
+          first_name: string
+          last_name: string
+          member_id: string
+          profile_id: string
+          role_ids: string[]
+          role_names: string[]
+          status: Database["public"]["Enums"]["member_status"]
+        }[]
+      }
+      member_is_admin: { Args: { p_member: string }; Returns: boolean }
       my_permissions: { Args: { p_org: string }; Returns: string[] }
       notify_expiring_documents: { Args: never; Returns: number }
+      org_admin_count: { Args: { p_org: string }; Returns: number }
       provision_organization: {
         Args: {
           p_admin_first_name: string
@@ -2916,6 +2935,14 @@ export type Database = {
       }
       refresh_monthly_fee_statuses: {
         Args: { p_organization_id?: string }
+        Returns: undefined
+      }
+      set_member_roles: {
+        Args: { p_member: string; p_role_ids: string[] }
+        Returns: undefined
+      }
+      set_member_status: {
+        Args: { p_member: string; p_status: string }
         Returns: undefined
       }
       uuid_or_null: { Args: { p: string }; Returns: string }
