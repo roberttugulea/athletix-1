@@ -16,6 +16,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "GESTIONE",
     items: [
       { label: "Dashboard", href: "/dashboard", symbol: "▦" },
+      { label: "Notifiche", href: "/notifiche", symbol: "◔" },
       { label: "Atleti", href: "/atleti", symbol: "♟", permission: "people.manage" },
       { label: "Coach", href: "/coach", symbol: "◈", permission: "people.manage" },
       { label: "Gruppi", href: "/gruppi", symbol: "◉", permission: "groups.manage" },

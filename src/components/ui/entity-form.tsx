@@ -20,7 +20,8 @@ export type FieldConfig = {
     | "select"
     | "checkbox"
     | "color"
-    | "file";
+    | "file"
+    | "textarea";
   required?: boolean;
   placeholder?: string;
   options?: { value: string; label: string }[];
@@ -82,7 +83,17 @@ export function EntityForm({
                     {f.label}
                     {f.required ? " *" : ""}
                   </label>
-                  {f.type === "file" ? (
+                  {f.type === "textarea" ? (
+                    <textarea
+                      id={f.name}
+                      name={f.name}
+                      required={f.required}
+                      placeholder={f.placeholder}
+                      rows={6}
+                      defaultValue={def == null ? "" : String(def)}
+                      className="w-full rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--blue)]"
+                    />
+                  ) : f.type === "file" ? (
                     <input
                       id={f.name}
                       name={f.name}

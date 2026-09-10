@@ -39,6 +39,12 @@ export default async function PortalLayout({
         <div className="flex items-center gap-3 text-xs">
           <span className="text-[var(--muted)]">{name}</span>
           <Link
+            href="/area/notifiche"
+            className="font-semibold text-[var(--blue)]"
+          >
+            Notifiche
+          </Link>
+          <Link
             href="/area/password"
             className="font-semibold text-[var(--blue)]"
           >

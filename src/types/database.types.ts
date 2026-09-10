@@ -2864,6 +2864,10 @@ export type Database = {
         Args: { p_amount: number; p_joined_on: string; p_period: string }
         Returns: number
       }
+      communication_recipient_emails: {
+        Args: { p_comm: string }
+        Returns: string[]
+      }
       create_subscription: {
         Args: { p_athlete: string; p_plan: string; p_starts_on: string }
         Returns: string
@@ -2883,6 +2887,7 @@ export type Database = {
       is_athlete_self: { Args: { p_athlete: string }; Returns: boolean }
       is_coach_of_athlete: { Args: { p_athlete: string }; Returns: boolean }
       is_coach_of_group: { Args: { p_group: string }; Returns: boolean }
+      is_communication_recipient: { Args: { p_comm: string }; Returns: boolean }
       is_guardian_of: { Args: { p_athlete: string }; Returns: boolean }
       is_organization_member: { Args: { p_org: string }; Returns: boolean }
       issue_receipt: { Args: { p_payment: string }; Returns: string }
@@ -2903,6 +2908,10 @@ export type Database = {
       my_permissions: { Args: { p_org: string }; Returns: string[] }
       notify_expiring_documents: { Args: never; Returns: number }
       org_admin_count: { Args: { p_org: string }; Returns: number }
+      populate_communication_recipients: {
+        Args: { p_comm: string; p_group?: string; p_scope: string }
+        Returns: number
+      }
       provision_organization: {
         Args: {
           p_admin_first_name: string
@@ -2937,6 +2946,7 @@ export type Database = {
         Args: { p_organization_id?: string }
         Returns: undefined
       }
+      send_communication: { Args: { p_comm: string }; Returns: number }
       set_member_roles: {
         Args: { p_member: string; p_role_ids: string[] }
         Returns: undefined
