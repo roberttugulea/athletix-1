@@ -38,6 +38,12 @@ export default async function PortalLayout({
         </Link>
         <div className="flex items-center gap-3 text-xs">
           <span className="text-[var(--muted)]">{name}</span>
+          <Link
+            href="/area/password"
+            className="font-semibold text-[var(--blue)]"
+          >
+            Cambia password
+          </Link>
           <form action={signOut}>
             <button type="submit" className="font-semibold text-[var(--blue)]">
               Esci

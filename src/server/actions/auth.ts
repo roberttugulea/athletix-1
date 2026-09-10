@@ -94,3 +94,35 @@ export async function updatePassword(
 
   redirect("/dashboard");
 }
+
+/**
+ * Cambio password da utente già autenticato (area personale). Non serve email:
+ * l'utente conosce la password attuale/provvisoria ed è loggato.
+ */
+export async function changeMyPassword(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const parsed = newPasswordSchema.safeParse({
+    password: formData.get("password"),
+    confirm: formData.get("confirm"),
+  });
+  if (!parsed.success) {
+    return { fieldErrors: z.flattenError(parsed.error).fieldErrors };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { error } = await supabase.auth.updateUser({
+    password: parsed.data.password,
+  });
+  if (error) {
+    return { message: "Impossibile aggiornare la password. Riprova." };
+  }
+
+  return { ok: true, message: "Password aggiornata." };
+}

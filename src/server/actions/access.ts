@@ -81,8 +81,8 @@ async function ensureAccount(
 
 function accessResultMessage(tempPassword: string | null): string {
   return tempPassword
-    ? `Accesso creato. Password provvisoria: ${tempPassword} — comunicala all'interessato. Potrà cambiarla da «Password dimenticata» nella pagina di accesso.`
-    : "Account già esistente: collegato correttamente.";
+    ? `Accesso creato. Password provvisoria: ${tempPassword} — comunicala all'interessato. Al primo accesso potrà cambiarla da «Area personale → Cambia password».`
+    : "Account già esistente: collegato correttamente. L'interessato accede con le credenziali che già usa.";
 }
 
 // ============================================================ Atleta ===

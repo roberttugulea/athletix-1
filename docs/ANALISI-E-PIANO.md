@@ -397,14 +397,15 @@ Migration `20260914090000_documents_storage_and_alerts.sql`. Tutto verificato a 
 
 ### Fase 6 — Aree self-service
 Decisione committente (2026-09-10): **atleti maggiorenni → login proprio; minori di 18 → accesso solo tramite un tutore.**
-- 6.1 ◑ **Area atleta/tutore** — *in corso*.
-  - Provisioning account (`src/server/actions/access.ts`): da scheda atleta/tutore, `grantAthleteAccess` / `grantGuardianAccess` (permesso `people.manage`) creano/riusano l'utente auth via **client di servizio** (`src/lib/supabase/admin.ts`, chiave `SUPABASE_SERVICE_ROLE_KEY`, bypassa RLS) + riga `profiles`, poi collegano `athletes.profile_id` / `guardians.profile_id`. Password provvisoria mostrata **una sola volta** nel messaggio del form (nessun provider email: si comunica a voce/altro; l'utente la cambia da «Password dimenticata»). `grantAthleteAccess` blocca i minorenni. `revoke*` azzerano `profile_id`.
+- 6.1 ✅ **Area atleta/tutore**.
+  - Provisioning account (`src/server/actions/access.ts`): da scheda atleta/tutore, `grantAthleteAccess` / `grantGuardianAccess` (permesso `people.manage`) creano/riusano l'utente auth via **client di servizio** (`src/lib/supabase/admin.ts`, chiave `SUPABASE_SERVICE_ROLE_KEY`, bypassa RLS) + riga `profiles`, poi collegano `athletes.profile_id` / `guardians.profile_id`. Password provvisoria mostrata **una sola volta** nel messaggio del form (nessun provider email: si comunica a voce/altro). `grantAthleteAccess` blocca i minorenni. `revoke*` azzerano `profile_id`.
   - Routing: `src/lib/auth/portal.ts` `getPortalIdentity()` (atleti self + minori in tutela). `(app)/layout` e `/onboarding` ora deviano i non-staff su `/area`. Nuovo route group `(portal)` con shell leggera.
-  - Pagine: `/area` (elenco persone) e `/area/atleta/[id]` (sola lettura: anagrafica, gruppi, prossimi allenamenti, quote, pagamenti, certificati, tesseramenti — con badge scadenze).
+  - Pagine: `/area` (elenco persone), `/area/atleta/[id]` (sola lettura: anagrafica, gruppi, prossimi allenamenti, quote, pagamenti, certificati, tesseramenti — con badge scadenze), `/area/password` (**cambio password da loggato**, `changeMyPassword` — non serve email; link nell'header del portale).
   - Migration `20260914120000_portal_read_access.sql`: estende le letture RLS di `organizations` / `groups` / `training_sessions` / `attendances` a atleta-self e tutore (prima erano solo `is_organization_member`).
-  - Verificato a runtime: grant per Mario Rossi (21 anni) → password provvisoria → login come atleta → redirect `/area` → scheda con tutti i dati reali via RLS; `/dashboard` e `/atleti` reindirizzano l'atleta su `/area`; id atleta non proprio → 404.
-  - **Ancora da fare in 6.1**: comunicazioni ricevute nell'area; azioni self (es. richiesta modifica dati) se previste; link "Area personale" e stato accesso anche nella scheda coach.
-- 6.2 Area coach completa (gruppi/atleti/sessioni/presenze/schede propri). 6.3 Schede allenamento (`workout_plans`).
+  - Verificato a runtime: grant per Mario Rossi (21 anni) → password provvisoria → login come atleta → redirect `/area` → scheda con tutti i dati reali via RLS; `/dashboard` e `/atleti` reindirizzano l'atleta su `/area`; id atleta non proprio → 404; cambio password dal portale ok.
+  - **Rinviato (non erano parte di 6.1):** comunicazioni ricevute nell'area → **Fase 7.1/7.2** (manca il modulo comunicazioni); stato accesso / invito nella scheda coach → **Fase 7.5** (i coach accedono come `organization_members` con ruolo Coach, quindi è gestione utenti/ruoli, non `coaches.profile_id`); azioni self di modifica dati → **fuori scope** (nessun self-service oltre alla consultazione, da decisione committente).
+- 6.2 Area coach completa (gruppi/atleti/sessioni/presenze/schede propri) — usa l'app `(app)` con nav ridotta (permesso `attendance.manage`), non un portale separato.
+- 6.3 Schede allenamento (`workout_plans`).
 - Test T09, T10.
 
 ### Fase 7 — Comunicazione, gare, report, utenti
