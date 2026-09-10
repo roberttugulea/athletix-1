@@ -193,6 +193,15 @@ export function AppShell({
           </button>
           <span className="mobile-brand">ATHLETIX</span>
           <div className="top-actions">
+            <form action="/cerca" method="get">
+              <input
+                name="q"
+                placeholder="Cerca atleti, gruppi, gare…"
+                aria-label="Ricerca globale"
+                className="rounded-lg border border-[var(--line)] bg-white px-3 py-1.5 text-sm outline-none focus:border-[var(--blue)]"
+                style={{ width: 220 }}
+              />
+            </form>
             <span className="avatar">{initials(user.name)}</span>
           </div>
         </header>

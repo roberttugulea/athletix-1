@@ -2891,6 +2891,18 @@ export type Database = {
       is_guardian_of: { Args: { p_athlete: string }; Returns: boolean }
       is_organization_member: { Args: { p_org: string }; Returns: boolean }
       issue_receipt: { Args: { p_payment: string }; Returns: string }
+      list_audit_logs: {
+        Args: { p_limit?: number; p_org: string }
+        Returns: {
+          action: string
+          actor: string
+          created_at: string
+          id: number
+          record_id: string
+          summary: string
+          table_name: string
+        }[]
+      }
       list_org_members: {
         Args: { p_org: string }
         Returns: {

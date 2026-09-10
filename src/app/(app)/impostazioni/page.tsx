@@ -12,6 +12,7 @@ const SECTIONS = [
   { href: "/impostazioni/stagioni", title: "Stagioni", desc: "Annate sportive; una sola corrente" },
   { href: "/impostazioni/discipline", title: "Discipline", desc: "Sport praticati nel centro polisportivo" },
   { href: "/impostazioni/utenti", title: "Utenti e ruoli", desc: "Membri del gestionale, ruoli e accessi" },
+  { href: "/impostazioni/audit", title: "Registro attività", desc: "Storico delle modifiche ai dati" },
 ];
 
 export default async function ImpostazioniPage() {
