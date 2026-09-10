@@ -100,6 +100,14 @@ export default async function CoachGroupPage(props: {
                     className="border-b border-[#f1f4f9] last:border-0"
                   >
                     <td className="px-4 py-3 font-semibold">{a.name}</td>
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        href={`/schede/${a.id}`}
+                        className="text-xs font-semibold text-[var(--blue)]"
+                      >
+                        Schede allenamento
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>

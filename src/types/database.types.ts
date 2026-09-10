@@ -2722,6 +2722,123 @@ export type Database = {
           },
         ]
       }
+      workout_plan_items: {
+        Row: {
+          created_at: string
+          day_index: number
+          exercise: string
+          id: string
+          load: string | null
+          notes: string | null
+          plan_id: string
+          reps: string | null
+          rest_seconds: number | null
+          sets: number | null
+          sort: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_index?: number
+          exercise: string
+          id?: string
+          load?: string | null
+          notes?: string | null
+          plan_id: string
+          reps?: string | null
+          rest_seconds?: number | null
+          sets?: number | null
+          sort?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_index?: number
+          exercise?: string
+          id?: string
+          load?: string | null
+          notes?: string | null
+          plan_id?: string
+          reps?: string | null
+          rest_seconds?: number | null
+          sets?: number | null
+          sort?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_plan_items_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "workout_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workout_plans: {
+        Row: {
+          athlete_id: string
+          coach_id: string | null
+          created_at: string
+          ends_on: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          starts_on: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          athlete_id: string
+          coach_id?: string | null
+          created_at?: string
+          ends_on?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          starts_on: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          athlete_id?: string
+          coach_id?: string | null
+          created_at?: string
+          ends_on?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          starts_on?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_plans_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "athletes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_plans_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_plans_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -410,8 +410,10 @@ Decisione committente (2026-09-10): **atleti maggiorenni → login proprio; mino
   - `/calendario` e `/presenze`: se l'utente è coach **e non** ha `groups.manage`, le query `training_sessions` sono filtrate su `groupIds` e i link al gruppo puntano a `/coach/gruppo/[id]` invece che a `/gruppi/[id]`. `/presenze/[id]` nega (404) le sessioni fuori dai propri gruppi.
   - Voce nav "Area coach" (`attendance.manage`); per staff non-coach mostra un avviso "non sei collegato a un'anagrafica coach".
   - Verificato a runtime con utente coach di test (`coach.test@athletix.local`, membership + ruolo Coach + `coaches.organization_member_id` + `coach_groups` → Judo Ragazzi): nav ridotta (Dashboard/Calendario/Presenze/Area coach); `/coach/area` e `/coach/gruppo` mostrano solo il suo gruppo; salvataggio presenze ok (RLS `is_coach_of_group`); `/atleti` `/gruppi` `/abbonamenti` → redirect denied; gruppo altrui → 404; l'admin continua a vedere tutto con link a `/gruppi/[id]`.
-- 6.3 Schede allenamento (`workout_plans`) — da fare.
-- Test T09, T10.
+- 6.3 ✅ **Schede di allenamento**. Migration `20260914150000_workout_plans.sql`: `workout_plans` (athlete, coach, titolo, date, stato draft/active/archived, note) + `workout_plan_items` (day_index 1–14, exercise, sets, reps, load, rest_seconds, notes, sort). RLS: lettura a `people.manage` / coach dell'atleta / atleta-self / tutore; scrittura a `people.manage` / `is_coach_of_athlete`. Server actions `src/server/actions/workouts.ts` (guard `attendance.manage`, la RLS restringe il coach ai propri atleti). Route `(app)/schede/[athleteId]` (elenco + crea) e `/schede/[athleteId]/[planId]` (meta scheda + esercizi per giorno con `<details>` inline edit + rimuovi). Link dalla scheda atleta staff (`_workouts-section.tsx`) e dal roster `/coach/gruppo/[id]`. Pannello **sola lettura** nell'area personale (`/area/atleta/[id]`).
+  - Verificato a runtime: admin crea scheda + esercizio; coach crea scheda per un proprio atleta (RLS `is_coach_of_athlete` ok); atleta la vede in sola lettura nell'area personale.
+- **Fase 6 completa** (6.1 + 6.2 + 6.3).
+- Test T09, T10: coperti da verifica manuale; da automatizzare.
 
 ### Fase 7 — Comunicazione, gare, report, utenti
 - 7.1 Comunicazioni (draft/schedule/send) + destinatari (+ email provider **DA DEFINIRE**). 7.2 Feed notifiche in-app. 7.3 Gare + convocazioni + risultati + eventi. 7.4 Report/KPI + export CSV/Excel. 7.5 Gestione utenti e ruoli (invito, disattiva, assegna ruolo, protezione ultimo admin). 7.6 Ricerca globale. 7.7 Viewer audit log. Import controllato.

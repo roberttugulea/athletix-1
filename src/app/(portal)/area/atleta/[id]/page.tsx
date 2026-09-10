@@ -60,6 +60,7 @@ export default async function PortalAthletePage(props: {
     { data: payments },
     { data: certs },
     { data: memberships },
+    { data: workouts },
   ] = await Promise.all([
     supabase
       .from("athletes")
@@ -92,6 +93,12 @@ export default async function PortalAthletePage(props: {
       .from("fita_memberships")
       .select("id, federation, membership_number, ends_on, status")
       .eq("athlete_id", id)
+      .order("starts_on", { ascending: false }),
+    supabase
+      .from("workout_plans")
+      .select("id, title, starts_on, ends_on, workout_plan_items(day_index, exercise, sets, reps, load, rest_seconds)")
+      .eq("athlete_id", id)
+      .eq("status", "active")
       .order("starts_on", { ascending: false }),
   ]);
 
@@ -303,6 +310,69 @@ export default async function PortalAthletePage(props: {
         ) : (
           <p className="text-xs text-[var(--muted)]">
             Nessun tesseramento registrato.
+          </p>
+        )}
+      </Panel>
+
+      <Panel title="Schede di allenamento">
+        {(workouts ?? []).length ? (
+          (workouts ?? []).map((w) => {
+            const items = (w.workout_plan_items ?? []) as {
+              day_index: number;
+              exercise: string;
+              sets: number | null;
+              reps: string | null;
+              load: string | null;
+              rest_seconds: number | null;
+            }[];
+            const byDay = new Map<number, typeof items>();
+            for (const it of [...items].sort(
+              (a, b) => a.day_index - b.day_index,
+            )) {
+              if (!byDay.has(it.day_index)) byDay.set(it.day_index, []);
+              byDay.get(it.day_index)!.push(it);
+            }
+            return (
+              <div key={w.id} className="mb-4 last:mb-0">
+                <p className="text-sm font-semibold">{w.title}</p>
+                <p className="mb-2 text-xs text-[var(--muted)]">
+                  dal {formatShortDate(`${w.starts_on}T12:00:00`)}
+                  {w.ends_on
+                    ? ` al ${formatShortDate(`${w.ends_on}T12:00:00`)}`
+                    : ""}
+                </p>
+                {[...byDay.entries()].map(([day, list]) => (
+                  <div key={day} className="mb-2">
+                    <p className="text-xs font-bold text-[var(--muted)]">
+                      Giorno {day}
+                    </p>
+                    <ul className="text-sm">
+                      {list.map((it, i) => (
+                        <li key={i} className="py-1">
+                          <span className="font-semibold">{it.exercise}</span>
+                          <span className="ml-2 text-[var(--muted)]">
+                            {[
+                              it.sets != null ? `${it.sets} serie` : null,
+                              it.reps ? `${it.reps} rip` : null,
+                              it.load,
+                              it.rest_seconds != null
+                                ? `rec ${it.rest_seconds}s`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            );
+          })
+        ) : (
+          <p className="text-xs text-[var(--muted)]">
+            Nessuna scheda attiva.
           </p>
         )}
       </Panel>

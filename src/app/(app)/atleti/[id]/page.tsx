@@ -15,6 +15,7 @@ import { CategoriesSection } from "./_categories-section";
 import { DocumentsSection } from "./_documents-section";
 import { GuardiansSection } from "./_guardians-section";
 import { SubscriptionsSection } from "./_subscriptions-section";
+import { WorkoutsSection } from "./_workouts-section";
 
 export const metadata = { title: "Scheda atleta | ATHLETIX" };
 
@@ -100,6 +101,7 @@ export default async function AtletaDetailPage(props: {
         athleteId={row.id}
         organizationId={org.organizationId}
       />
+      <WorkoutsSection athleteId={row.id} />
     </div>
   );
 }
