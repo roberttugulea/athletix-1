@@ -30,6 +30,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Certificati", href: "/certificati", symbol: "✚", permission: "documents.manage" },
       { label: "Categorie", href: "/categorie", symbol: "⬡", permission: "people.manage" },
       { label: "Comunicazioni", href: "/comunicazioni", symbol: "◌", permission: "communications.manage" },
+      { label: "Gare", href: "/gare", symbol: "▲", permission: "competitions.manage" },
+      { label: "Eventi", href: "/eventi", symbol: "◆", permission: "competitions.manage" },
     ],
   },
   {

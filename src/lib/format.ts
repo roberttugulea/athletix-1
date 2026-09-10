@@ -51,3 +51,56 @@ export function addDays(date: string, days: number): string {
 }
 
 export const todayISO = () => new Date().toISOString().slice(0, 10);
+
+/**
+ * Quanto il fuso `tz` è avanti rispetto a UTC (ms) per l'istante UTC indicato.
+ * Indipendente dal fuso della macchina.
+ */
+function tzAheadOfUtcMs(utcMs: number, tz: string): number {
+  const p = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date(utcMs));
+  const g = (t: string) => Number(p.find((x) => x.type === t)!.value);
+  const asTz = Date.UTC(
+    g("year"),
+    g("month") - 1,
+    g("day"),
+    g("hour") % 24,
+    g("minute"),
+    g("second"),
+  );
+  return asTz - utcMs;
+}
+
+/**
+ * Converte un valore `<input type="datetime-local">` ("2026-11-01T15:30"),
+ * inteso come ora di parete nel fuso `tz`, nell'ISO UTC corrispondente.
+ */
+export function localInputToUtcISO(local: string, tz = TZ): string {
+  const m = local.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!m) return local;
+  const [y, mo, da, h, mi] = m.slice(1).map(Number);
+  const guess = Date.UTC(y, mo - 1, da, h, mi);
+  const offset = tzAheadOfUtcMs(guess, tz);
+  return new Date(guess - offset).toISOString();
+}
+
+/** ISO UTC → valore per `<input type="datetime-local">` nel fuso `tz`. */
+export function utcISOToLocalInput(iso: string, tz = TZ): string {
+  const parts = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(iso));
+  return parts.replace(" ", "T");
+}
