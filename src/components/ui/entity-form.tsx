@@ -19,12 +19,15 @@ export type FieldConfig = {
     | "number"
     | "select"
     | "checkbox"
-    | "color";
+    | "color"
+    | "file";
   required?: boolean;
   placeholder?: string;
   options?: { value: string; label: string }[];
   help?: string;
   width?: "full" | "half";
+  /** solo per type "file": attributo accept */
+  accept?: string;
 };
 
 export function EntityForm({
@@ -41,9 +44,15 @@ export function EntityForm({
   submitLabel?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  const hasFile = fields.some((f) => f.type === "file");
 
   return (
-    <form action={formAction} className="panel" style={{ padding: 20 }}>
+    <form
+      action={formAction}
+      className="panel"
+      style={{ padding: 20 }}
+      encType={hasFile ? "multipart/form-data" : undefined}
+    >
       {Object.entries(hidden).map(([name, value]) => (
         <input key={name} type="hidden" name={name} value={value} />
       ))}
@@ -73,7 +82,16 @@ export function EntityForm({
                     {f.label}
                     {f.required ? " *" : ""}
                   </label>
-                  {f.type === "select" ? (
+                  {f.type === "file" ? (
+                    <input
+                      id={f.name}
+                      name={f.name}
+                      type="file"
+                      required={f.required}
+                      accept={f.accept}
+                      className="w-full rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm outline-none file:mr-3 file:rounded-md file:border-0 file:bg-[var(--blue)] file:px-3 file:py-1 file:text-xs file:font-semibold file:text-white focus:border-[var(--blue)]"
+                    />
+                  ) : f.type === "select" ? (
                     <select
                       id={f.name}
                       name={f.name}

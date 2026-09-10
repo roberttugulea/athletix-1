@@ -1771,6 +1771,63 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          entity_id: string | null
+          entity_table: string | null
+          id: string
+          kind: string
+          organization_id: string
+          read_at: string | null
+          title: string
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_table?: string | null
+          id?: string
+          kind: string
+          organization_id: string
+          read_at?: string | null
+          title: string
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_table?: string | null
+          id?: string
+          kind?: string
+          organization_id?: string
+          read_at?: string | null
+          title?: string
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           archived_at: string | null
@@ -1821,19 +1878,25 @@ export type Database = {
       }
       organization_settings: {
         Row: {
+          certificate_alert_days: number
           fee_grace_days: number
+          membership_alert_days: number
           organization_id: string
           private_documents_bucket: string
           updated_at: string
         }
         Insert: {
+          certificate_alert_days?: number
           fee_grace_days?: number
+          membership_alert_days?: number
           organization_id: string
           private_documents_bucket?: string
           updated_at?: string
         }
         Update: {
+          certificate_alert_days?: number
           fee_grace_days?: number
+          membership_alert_days?: number
           organization_id?: string
           private_documents_bucket?: string
           updated_at?: string
@@ -2703,6 +2766,7 @@ export type Database = {
       is_organization_member: { Args: { p_org: string }; Returns: boolean }
       issue_receipt: { Args: { p_payment: string }; Returns: string }
       my_permissions: { Args: { p_org: string }; Returns: string[] }
+      notify_expiring_documents: { Args: never; Returns: number }
       provision_organization: {
         Args: {
           p_admin_first_name: string
@@ -2737,6 +2801,7 @@ export type Database = {
         Args: { p_organization_id?: string }
         Returns: undefined
       }
+      uuid_or_null: { Args: { p: string }; Returns: string }
     }
     Enums: {
       attendance_status: "present" | "absent" | "late" | "justified"

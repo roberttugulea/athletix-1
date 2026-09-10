@@ -1,12 +1,15 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { ACTIVE_ORG_COOKIE, getMemberships } from "@/lib/auth/session";
 import type { FormState } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
+import { orgSettingsSchema } from "@/lib/validation/config";
+import { actionCtx, dbError, zodErrors } from "./_helpers";
 
 const ORG_COOKIE_OPTIONS = {
   httpOnly: true,
@@ -60,4 +63,30 @@ export async function provisionOrganization(
   const cookieStore = await cookies();
   cookieStore.set(ACTIVE_ORG_COOKIE, data as string, ORG_COOKIE_OPTIONS);
   redirect("/dashboard");
+}
+
+export async function updateOrgSettings(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const c = await actionCtx("organization.manage");
+  if (!c.ok) return c.state;
+
+  const parsed = orgSettingsSchema.safeParse({
+    fee_grace_days: Number(formData.get("fee_grace_days")),
+    certificate_alert_days: Number(formData.get("certificate_alert_days")),
+    membership_alert_days: Number(formData.get("membership_alert_days")),
+  });
+  if (!parsed.success) return zodErrors(parsed.error);
+
+  const { error } = await c.supabase
+    .from("organization_settings")
+    .update(parsed.data)
+    .eq("organization_id", c.org.organizationId);
+  if (error) return { message: dbError(error) };
+
+  revalidatePath("/impostazioni/organizzazione");
+  revalidatePath("/certificati");
+  revalidatePath("/tesseramenti");
+  return { ok: true, message: "Impostazioni salvate." };
 }

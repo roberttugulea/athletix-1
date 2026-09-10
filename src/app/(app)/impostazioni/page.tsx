@@ -6,6 +6,7 @@ import { requirePermission } from "@/lib/auth/guards";
 export const metadata = { title: "Impostazioni | ATHLETIX" };
 
 const SECTIONS = [
+  { href: "/impostazioni/organizzazione", title: "Organizzazione", desc: "Tolleranza pagamenti e preavvisi di scadenza" },
   { href: "/impostazioni/strutture", title: "Strutture", desc: "Sedi e impianti dell'organizzazione" },
   { href: "/impostazioni/spazi", title: "Spazi", desc: "Palestre, campi e sale delle strutture" },
   { href: "/impostazioni/stagioni", title: "Stagioni", desc: "Annate sportive; una sola corrente" },

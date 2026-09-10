@@ -34,6 +34,24 @@ export const seasonSchema = z
     message: "La data di fine deve essere successiva o uguale all'inizio",
   });
 
+export const orgSettingsSchema = z.object({
+  fee_grace_days: z
+    .number()
+    .int("Numero intero")
+    .min(0, "Minimo 0")
+    .max(31, "Massimo 31"),
+  certificate_alert_days: z
+    .number()
+    .int("Numero intero")
+    .min(1, "Minimo 1")
+    .max(180, "Massimo 180"),
+  membership_alert_days: z
+    .number()
+    .int("Numero intero")
+    .min(1, "Minimo 1")
+    .max(180, "Massimo 180"),
+});
+
 export const disciplineSchema = z.object({
   name: shortName,
   color: z

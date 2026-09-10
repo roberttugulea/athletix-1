@@ -385,9 +385,15 @@ Decisioni committente: quota **mensile** + **pacchetti a durata (3 e 9 mesi)**; 
 - **Fase 4 completa.** Tutto verificato a runtime. Metodi: contanti / POS / bonifico / online / altro. Valuta EUR.
 - Test T06 (pagamento tracciato) e T07 (rimborso parziale, originale invariato): coperti dai test manuali; da automatizzare.
 
-### Fase 5 — Documenti & scadenze
-- 5.1 Upload su bucket privato + policy Storage. 5.2 Certificati medici (+ alert). 5.3 Tesseramenti FITA (+ alert). 5.4 Job `notify_expiring_documents` → `notifications`.
-- Test T08.
+### Fase 5 — Documenti & scadenze ✅
+Migration `20260914090000_documents_storage_and_alerts.sql`. Tutto verificato a runtime.
+- 5.1 ✅ Bucket privato `private-documents` creato **via SQL** (`storage.buckets` + 4 policy su `storage.objects`): accesso ai soli membri con `documents.manage`, tenant = 1° segmento del path (`<organization_id>/<anno>/<uuid>.<ext>`). Helper `uuid_or_null`. Upload da server action (`uploadPrivateDocument`), download con **signed URL** a 5 minuti. Verificato: upload nella cartella di un'altra org **respinto** dalla RLS; solo il prefisso della propria org è visibile.
+- 5.2 ✅ Certificati medici: `/certificati` (list con badge «in scadenza»/«scaduto», filtro stato, ricerca), `/certificati/nuovo` (atleta + tipo + date + allegato PDF/immagine ≤ 10 MB), `/certificati/[id]` (modifica, sostituzione allegato, elimina cert+allegato). Sezione nella scheda atleta.
+- 5.3 ✅ Tesseramenti: stessa struttura su `fita_memberships` (tabella scaffold mantenuta; campo `federation` reso **testo libero** — FITA/FIN/CONI/UISP… — invece della rinomina a `federation_memberships` prevista in §2.3, rinviata per non toccare 3 migration + tipi + audit per un guadagno UI nullo). `/tesseramenti` + `nuovo` + `[id]` + sezione scheda atleta.
+- 5.4 ✅ `notify_expiring_documents()` (SECURITY DEFINER): porta a «scaduto» ciò che è oltre data, poi inserisce in `notifications` (nuova tabella, feed per-utente, RLS `user_id = auth.uid()`, indice unico anti-duplicato sugli avvisi non letti) un avviso per ogni membro con `documents.manage`/`people.manage`/`organization.manage`. Richiamabile da cron; esposta anche via pulsante «Ricalcola scadenze». Verificato: genera l'avviso corretto per il certificato in scadenza.
+- 5.5 ✅ `/impostazioni/organizzazione`: form `updateOrgSettings` per `fee_grace_days` + i nuovi `certificate_alert_days` / `membership_alert_days` (default 30). `EntityForm` esteso con il tipo campo `file`; `PageHeader.subtitle` ora accetta `ReactNode`.
+- Test T08: coperto da verifica manuale (notifica generata); da automatizzare.
+- Feed notifiche in-app (pagina `/notifiche` + widget dashboard): rinviato alla **Fase 7.2** come da piano.
 
 ### Fase 6 — Aree self-service
 - 6.1 Area atleta/tutore (profilo, quote, certificati, tessera, calendario/prenotazioni propri, comunicazioni). 6.2 Area coach completa. 6.3 Schede allenamento (`workout_plans`).
@@ -425,7 +431,7 @@ Checklist scheda 12: build + lint puliti; tutte le migration applicate; matrice 
 | D41 / C07 | Valuta (EUR?) e metodi di pagamento reali (contanti/POS/bonifico/online) | Fase 4 |
 | C04 | Importi quote mensili, prezzi pacchetti a durata, tagli e prezzi carnet ingressi (dati, non codice) | Fase 4 |
 | — | Il carnet ingressi si decrementa sulla **presenza** o sulla **prenotazione/iscrizione**? Scadenza carnet? | Fase 4.3 |
-| FL06 | Giorni di preavviso per alert certificati / tesseramenti | Fase 5 |
+| ✅ FL06 | Giorni di preavviso alert certificati / tesseramenti: **configurabile per organizzazione, default 30** (`/impostazioni/organizzazione`) — *deciso Fase 5* | — |
 | §4 | Formato numero ricevuta (progressivo annuo? per struttura?) | Fase 4.6 |
 | I04 | Provider email (Resend / Postmark / SES / SMTP…) | Fase 7.1 |
 | I05 | Serve pagamento online? quale gateway | Fase 7 (opz.) |
