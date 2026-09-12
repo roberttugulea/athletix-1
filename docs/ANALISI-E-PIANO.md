@@ -431,8 +431,14 @@ Ordine di lavoro adottato: **7.5 → 7.1 → 7.2 → 7.3 → 7.4 → 7.6 → 7.7
 - **FASE 7 COMPLETA** (7.5, 7.1, 7.2, 7.3, 7.4, 7.6, 7.7). Rinviati: scheduling comunicazioni, `event_attendees` UI, import CSV.
 - Test T12 (build): verde a ogni incremento. Coerenza report: verificata manualmente.
 
-### Fase 8 — Lancio
-Checklist scheda 12: build + lint puliti; tutte le migration applicate; matrice RLS verificata; test verdi; bucket privato + policy; backup Supabase; monitoring/hosting (**DA DEFINIRE**); dominio (**DA DEFINIRE**); `.env` solo nomi nel repo. Riepilogo finale: modifiche, test, rischi, prossimi passi.
+### Fase 8 — Lancio ◑
+Hosting: **Vercel** (deciso 2026-09-12).
+- ✅ `vercel.json` con cron giornaliero → `src/app/api/cron/daily/route.ts` (protetta da `CRON_SECRET`, chiama `refresh_monthly_fee_statuses` + `notify_expiring_documents` con la chiave di servizio). Migration `20260915090000_cron_grants.sql` concede a `service_role` l'esecuzione di `notify_expiring_documents` (prima solo `authenticated`, il cron non ha una sessione utente). Verificato: entrambe le RPC eseguite con successo via `service_role`.
+- ✅ `docs/DEPLOY.md` — guida passo-passo: import progetto, variabili d'ambiente, configurazione Site URL/Redirect URLs su Supabase, verifica del cron, dominio personalizzato, backup/monitoring, checklist scheda 12.
+- **Da fare (richiede il tuo account Vercel/Supabase, non automatizzabile da qui):** importare il repo su Vercel, impostare le variabili d'ambiente, aggiornare Site URL/Redirect URLs su Supabase, primo deploy, verifica cron. Dettagli in `docs/DEPLOY.md`.
+- Dominio personalizzato: **facoltativo**, non ancora deciso — si può lanciare sul dominio `*.vercel.app` e aggiungerne uno in un secondo momento (§6 della guida).
+- Backup: coperti dal piano Supabase attivo; da rivedere se serve Point-in-Time Recovery.
+- Checklist scheda 12: build + lint + test puliti ✓; migration applicate ✓; bucket privato + policy ✓; `.env` solo nomi nel repo ✓; matrice RLS verificata manualmente durante lo sviluppo (non automatizzata). Riepilogo finale del progetto: da fare a lancio completato.
 
 ---
 
@@ -463,7 +469,7 @@ Checklist scheda 12: build + lint puliti; tutte le migration applicate; matrice 
 | §4 | Formato numero ricevuta (progressivo annuo? per struttura?) | Fase 4.6 |
 | ✅ I04 | Provider email: **Resend** (il più semplice) — *deciso 2026-09-10*. Astrazione `src/lib/email/` attiva solo se `RESEND_API_KEY` + `EMAIL_FROM` sono in `.env.local`, altrimenti gli invii sono registrati senza spedizione. | Fase 7.1 |
 | I05 | Serve pagamento online? quale gateway | Fase 7 (opz.) |
-| Scheda 12 | Hosting (Vercel?), dominio, backup, monitoring, scheduler cron | Fase 8 |
+| ✅ Scheda 12 | Hosting: **Vercel** — *deciso 2026-09-12*. Scheduler cron: **Vercel Cron** (`vercel.json`, già configurato). Dominio: facoltativo, non ancora scelto (si parte su `*.vercel.app`). Backup/monitoring: coperti dal piano Supabase/Vercel attivo | Fase 8 |
 | C01 | Logo definitivo | rifinitura UI |
 | ✅ — | Atleti maggiorenni: **login proprio**. Minori di 18: **accesso solo via tutore**. — *deciso 2026-09-10* | — |
 | — | Ruoli di sistema globali (`organization_id = null`) o duplicati per organizzazione? | Fase 1.5 |
