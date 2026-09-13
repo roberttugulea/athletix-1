@@ -2,12 +2,18 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { updateSession } from "@/lib/supabase/proxy";
 
-/** Prefissi raggiungibili senza sessione. */
+/**
+ * Prefissi raggiungibili senza sessione utente. `/api/cron` include la
+ * propria autorizzazione (header `Authorization: Bearer CRON_SECRET`,
+ * vedi `src/app/api/cron/daily/route.ts`): Vercel Cron non ha una sessione
+ * Supabase, quindi qui non deve essere rimandato al login.
+ */
 const PUBLIC_PREFIXES = [
   "/login",
   "/recupera-password",
   "/reset-password",
   "/auth",
+  "/api/cron",
 ];
 
 function isPublicPath(pathname: string): boolean {
