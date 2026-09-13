@@ -431,14 +431,19 @@ Ordine di lavoro adottato: **7.5 → 7.1 → 7.2 → 7.3 → 7.4 → 7.6 → 7.7
 - **FASE 7 COMPLETA** (7.5, 7.1, 7.2, 7.3, 7.4, 7.6, 7.7). Rinviati: scheduling comunicazioni, `event_attendees` UI, import CSV.
 - Test T12 (build): verde a ogni incremento. Coerenza report: verificata manualmente.
 
-### Fase 8 — Lancio ◑
-Hosting: **Vercel** (deciso 2026-09-12).
-- ✅ `vercel.json` con cron giornaliero → `src/app/api/cron/daily/route.ts` (protetta da `CRON_SECRET`, chiama `refresh_monthly_fee_statuses` + `notify_expiring_documents` con la chiave di servizio). Migration `20260915090000_cron_grants.sql` concede a `service_role` l'esecuzione di `notify_expiring_documents` (prima solo `authenticated`, il cron non ha una sessione utente). Verificato: entrambe le RPC eseguite con successo via `service_role`.
-- ✅ `docs/DEPLOY.md` — guida passo-passo: import progetto, variabili d'ambiente, configurazione Site URL/Redirect URLs su Supabase, verifica del cron, dominio personalizzato, backup/monitoring, checklist scheda 12.
-- **Da fare (richiede il tuo account Vercel/Supabase, non automatizzabile da qui):** importare il repo su Vercel, impostare le variabili d'ambiente, aggiornare Site URL/Redirect URLs su Supabase, primo deploy, verifica cron. Dettagli in `docs/DEPLOY.md`.
-- Dominio personalizzato: **facoltativo**, non ancora deciso — si può lanciare sul dominio `*.vercel.app` e aggiungerne uno in un secondo momento (§6 della guida).
-- Backup: coperti dal piano Supabase attivo; da rivedere se serve Point-in-Time Recovery.
-- Checklist scheda 12: build + lint + test puliti ✓; migration applicate ✓; bucket privato + policy ✓; `.env` solo nomi nel repo ✓; matrice RLS verificata manualmente durante lo sviluppo (non automatizzata). Riepilogo finale del progetto: da fare a lancio completato.
+### Fase 8 — Lancio ✅
+Hosting: **Vercel** (deciso 2026-09-12). **In produzione:** `https://athletix-2.vercel.app`.
+- ✅ `vercel.json` con cron giornaliero → `src/app/api/cron/daily/route.ts` (protetta da `CRON_SECRET`, chiama `refresh_monthly_fee_statuses` + `notify_expiring_documents` con la chiave di servizio). Migration `20260915090000_cron_grants.sql` concede a `service_role` l'esecuzione di `notify_expiring_documents` (prima solo `authenticated`, il cron non ha una sessione utente).
+- ✅ **Bug corretto durante il lancio**: `src/proxy.ts` rimandava a `/login` anche `/api/cron/daily` (nessuna sessione utente in un cron → il job non avrebbe mai girato). Aggiunto `/api/cron` ai prefissi pubblici del proxy; la route mantiene comunque la propria verifica del `CRON_SECRET`. Verificato in produzione: chiamata reale di Vercel Cron (`vercel-cron/1.0`) → **200**.
+- ✅ `docs/DEPLOY.md` — guida passo-passo (seguita end-to-end con l'utente).
+- ✅ Import progetto su Vercel, variabili d'ambiente impostate, primo deploy, redeploy dopo il fix del proxy.
+- ✅ Supabase → Authentication → URL Configuration: Site URL e Redirect URLs aggiornati su `https://athletix-2.vercel.app`.
+- ✅ Login end-to-end verificato **in produzione** (utente admin → dashboard completa, nessun errore in console).
+- Dominio personalizzato: **facoltativo**, non richiesto — resta su `*.vercel.app`.
+- Backup: coperti dal piano Supabase attivo; da rivedere in futuro se serve Point-in-Time Recovery.
+- Checklist scheda 12: build + lint + test puliti ✓; migration applicate ✓; bucket privato + policy ✓; `.env` solo nomi nel repo ✓ (corretto un bug: `.env.example` non era mai stato tracciato in git); matrice RLS verificata manualmente durante lo sviluppo (non automatizzata); deploy verificato ✓.
+
+**LANCIO COMPLETATO (2026-09-13).**
 
 ---
 

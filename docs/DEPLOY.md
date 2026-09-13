@@ -96,9 +96,13 @@ questo progetto sono sempre additive, quindi l'ordine non è critico.
 - [x] Tutte le migrazioni applicate al progetto Supabase collegato
 - [x] Bucket privato `private-documents` + policy Storage attivi
 - [x] `.env` solo nomi nel repo, nessun segreto committato
-- [ ] Variabili d'ambiente impostate su Vercel (punto 2) — **da fare**
-- [ ] Site URL / Redirect URLs Supabase aggiornati (punto 3) — **da fare**
-- [ ] Primo deploy verificato (punto 4) — **da fare**
-- [ ] Job cron verificato (punto 5) — **da fare**
-- [ ] Dominio personalizzato (punto 6, facoltativo)
-- [ ] Piano di backup rivisto (punto 8)
+- [x] Variabili d'ambiente impostate su Vercel (punto 2)
+- [x] Site URL / Redirect URLs Supabase aggiornati (punto 3)
+- [x] Primo deploy verificato (punto 4) — in produzione su `https://athletix-2.vercel.app`
+- [x] Job cron verificato (punto 5) — chiamata reale di Vercel Cron confermata con esito 200
+- [ ] Dominio personalizzato (punto 6, facoltativo) — non richiesto, resta su `*.vercel.app`
+- [ ] Piano di backup rivisto (punto 8) — da valutare più avanti se serve Point-in-Time Recovery
+
+**Lancio completato il 2026-09-13.** Durante l'attivazione del cron è emerso e corretto un bug:
+il proxy di autenticazione (`src/proxy.ts`) rimandava a `/login` anche `/api/cron/daily`,
+impedendo di fatto al job giornaliero di girare — vedi commit `32044e8`.
